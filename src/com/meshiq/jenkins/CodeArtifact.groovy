@@ -12,10 +12,11 @@ class CodeArtifact {
     private final String awsDomainOwner
     private final String awsRegion
 
-    CodeArtifact(String awsDomain, String awsDomainOwner, String awsRegion) {
+    CodeArtifact(String awsDomain, String awsDomainOwner, String awsRegion, credentialsId) {
         this.awsDomain = awsDomain
         this.awsDomainOwner = awsDomainOwner
         this.awsRegion = awsRegion
+        this.credentialsId = credentialsId
     }
 
     String generateToken() {
@@ -57,6 +58,11 @@ class CodeArtifact {
 
     String executeCommand(String command) {
         log.info("Executing command: $command")
+
+        // Set AWS credentials environment variables
+        processBuilder.environment().put("AWS_ACCESS_KEY_ID", credentials(credentialsId).getAwsAccessKeyId())
+        processBuilder.environment().put("AWS_SECRET_ACCESS_KEY", credentials(credentialsId).getAwsSecretKey())
+
         def processBuilder = new ProcessBuilder(command.split(' '))
         processBuilder.redirectErrorStream(true)
         Process process = processBuilder.start()
