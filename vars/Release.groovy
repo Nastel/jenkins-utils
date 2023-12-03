@@ -20,6 +20,7 @@ def call() {
             MVN_HOME = tool 'M3'
             JAVA_HOME = tool 'JDK11'
             CODEARTIFACT_AUTH_TOKEN = ''
+            AWS_DOMAIN = 'nastel'
         }
 
         stages {
