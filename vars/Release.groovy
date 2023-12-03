@@ -9,7 +9,6 @@ def pom
 
 def call() {
 
-
     pipeline {
         agent any
 
@@ -22,24 +21,22 @@ def call() {
             MVN_HOME = tool 'M3'
             JAVA_HOME = tool 'JDK11'
             CODEARTIFACT_AUTH_TOKEN = ''
+
+            // AWS Properties
+            AWS_DOMAIN = 'nastel'
+            AWS_DOMAIN_OWNER = '672553873710'
+            AWS_DEFAULT_REGION = 'eu-central-1'
+
+            // Jenkins AWS Credentials ID
+            AWS_CREDENTIALS_ID = 'nastel-aws-maintainer'
+
+            // Jenkins Maven Settings ID
+            MVN_SETTINGS_FILE_ID = 'nastel-maven-settings'
         }
 
         stages {
             stage('Initialize and Validate') {
                 steps {
-                    script {
-                        // Load variables from an external file within the shared library
-                        def envFile = libraryResource('env.properties')
-                        def props = new Properties()
-                        props.load(envFile.toInputStream())
-
-                        // Load properties from the file into environment
-                        env.AWS_DOMAIN = props.getProperty('AWS_DOMAIN')
-                        env.AWS_DOMAIN_OWNER = props.getProperty('AWS_DOMAIN_OWNER')
-                        env.AWS_DEFAULT_REGION = props.getProperty('AWS_DEFAULT_REGION')
-                        env.AWS_CREDENTIALS_ID = props.getProperty('AWS_CREDENTIALS_ID')
-                        env.MVN_SETTINGS_FILE_ID = props.getProperty('MVN_SETTINGS_FILE_ID')
-
                         // Dump all environment variables
                         sh 'printenv'
 
