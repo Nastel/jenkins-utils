@@ -102,7 +102,8 @@ def call() {
 }
 
 def runMvn(String command) {
-    withCredentials([file(credentialsId: env.MVN_SETTINGS_FILE_ID, variable: 'SETTINGS_XML')]) {
+    configFileProvider([configFile(fileId: env.MVN_SETTINGS_FILE_ID, variable: 'SETTINGS_XML')]) {
+        // Directly output Maven command logs to console
         sh "${env.MVN_HOME}/bin/mvn -s ${SETTINGS_XML} ${command}"
     }
 }
