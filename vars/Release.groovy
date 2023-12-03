@@ -27,7 +27,7 @@ def call() {
                 steps {
                     script {
                         pom = readMavenPom file: 'pom.xml'
-                        codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER)
+                        codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION)
                         env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
 
                         if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {

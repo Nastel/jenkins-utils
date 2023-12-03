@@ -6,7 +6,7 @@ class CodeArtifactTest extends Specification {
 
     def "test generateToken"() {
         given:
-        def codeArtifact = new CodeArtifact('aws-domain', 'aws-domain-owner')
+        def codeArtifact = new CodeArtifact('aws-domain', 'aws-domain-owner', 'aws-region')
         codeArtifact.metaClass.executeCommand = { String command ->
             assert command.contains('get-authorization-token')
             return 'token-123'
@@ -21,7 +21,7 @@ class CodeArtifactTest extends Specification {
 
     def "test hasPackage"() {
         given:
-        def codeArtifact = new CodeArtifact('aws-domain', 'aws-domain-owner')
+        def codeArtifact = new CodeArtifact('aws-domain', 'aws-domain-owner', 'aws-region')
         codeArtifact.metaClass.executeCommand = { String command ->
             command.contains('list-package-versions') && packageVersion == 'existing-version' ? 'existing-version' : ''
         }
@@ -37,7 +37,7 @@ class CodeArtifactTest extends Specification {
 
     def "test deletePackage"() {
         given:
-        def codeArtifact = new CodeArtifact('aws-domain', 'aws-domain-owner')
+        def codeArtifact = new CodeArtifact('aws-domain', 'aws-domain-owner', 'aws-region')
         codeArtifact.metaClass.executeCommand = { String command ->
             assert command.contains('delete-package-versions')
             assert command.contains('deletable-version')

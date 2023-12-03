@@ -7,14 +7,16 @@ class CodeArtifact {
 
     private final String awsDomain
     private final String awsDomainOwner
+    private final String awsRegion
 
-    CodeArtifact(String awsDomain, String awsDomainOwner) {
+    CodeArtifact(String awsDomain, String awsDomainOwner, String awsRegion) {
         this.awsDomain = awsDomain
         this.awsDomainOwner = awsDomainOwner
+        this.awsRegion = awsRegion
     }
 
     String generateToken() {
-        String command = "aws codeartifact get-authorization-token --domain $awsDomain --domain-owner $awsDomainOwner --query authorizationToken --output text"
+        String command = "aws codeartifact get-authorization-token --domain $awsDomain --domain-owner $awsDomainOwner --region $awsRegion --query authorizationToken --output text"
         return executeCommand(command)
     }
 
