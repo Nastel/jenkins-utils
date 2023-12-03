@@ -19,11 +19,6 @@ def call() {
         environment {
             MVN_HOME = tool 'M3'
             JAVA_HOME = tool 'JDK11'
-            AWS_DEFAULT_REGION = 'eu-central-1'
-            AWS_DOMAIN = 'nastel'
-            AWS_DOMAIN_OWNER = '672553873710'
-            AWS_CREDENTIALS_ID = 'nastel-aws-maintainer'
-            MVN_SETTINGS_FILE_ID = 'nastel-maven-settings'
             CODEARTIFACT_AUTH_TOKEN = ''
         }
 
