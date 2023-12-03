@@ -27,6 +27,11 @@ def call() {
             stage('Initialize and Validate') {
                 steps {
                     script {
+                        // Dump all environment variables
+                        env.each { key, value ->
+                            echo "Environment variable: ${key} = ${value}"
+                        }
+
                         pom = readMavenPom file: 'pom.xml'
                         codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION)
                         println "[$env.AWS_DOMAIN][$env.AWS_DOMAIN_OWNER][$env.AWS_DEFAULT_REGION]"
