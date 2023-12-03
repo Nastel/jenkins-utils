@@ -66,15 +66,12 @@ class CodeArtifact {
     String executeCommand(String command) {
         log.info("Executing command: $command")
 
-        def processBuilder = new ProcessBuilder(command.split(' '))
-        processBuilder.redirectErrorStream(true)
-        Process process = processBuilder.start()
-        def output = process.text.trim()
-        process.waitFor()
+        // Using the sh step to execute the command
+        // This will capture the standard output of the command
+        def output = sh(script: command, returnStdout: true).trim()
 
-        if (process.exitValue() != 0) {
-            throw new Exception("Command execution failed with exit code: ${process.exitValue()}\nOutput: $output")
-        }
+        // Check for errors or non-zero exit status if needed
+        // Jenkins will mark the build as failed if the command exits with non-zero status
 
         return output
 
