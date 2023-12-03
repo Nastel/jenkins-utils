@@ -1,6 +1,5 @@
 def pom
 def token
-
 def isPackageInStagingRepo = false
 
 def call() {
@@ -34,67 +33,79 @@ def call() {
         }
 
         stages {
-            stage('Initialize and Validate') {
+            stage('Initialization') {
                 steps {
                     script {
-
+                        // Step 1: Read Maven POM
                         pom = readMavenPom file: 'pom.xml'
-
+                    }
+                    script {
+                        // Step 2: Generate CodeArtifact Token
                         token = generateCodeArtifactToken()
-
+                    }
+                    script {
+                        // Step 3: Check for existing release version
                         if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
                             error("Release version already exists in the repository.")
                         }
-
+                    }
+                    script {
+                        // Step 4: Check for package in staging repository
                         isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
                     }
                 }
             }
 
-            stage('Confirm  Rebuild') {
+            stage('Staging Check') {
                 when {
                     expression { isPackageInStagingRepo }
                 }
                 steps {
                     script {
+                        // Step 1: Confirm rebuild if package exists in staging
                         input message: "Package already exists in staging. Proceed with build?", ok: 'Yes'
                     }
                 }
             }
 
-            stage('Build') {
+            stage('Build and Test') {
                 steps {
                     script {
+                        // Step 1: Execute the Maven build
                         runMvn("clean package")
                     }
                 }
             }
 
-            stage('Promote to Staging') {
+            stage('Prepare Staging') {
                 steps {
                     script {
+                        // Step 1: Delete existing package in staging if necessary
                         if (isPackageInStagingRepo) {
                             deletePackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
                         }
-
+                    }
+                    script {
+                        // Step 2: Deploy to staging repository
                         runMvn("deploy -DaltDeploymentRepository=staging-repo")
                     }
                 }
             }
 
-            stage('QA Confirmation') {
+            stage('Quality Assurance') {
                 steps {
                     script {
+                        // Step 1: QA approval before release
                         input message: "Has QA approved the staging artifacts?", ok: 'Yes'
                     }
                 }
             }
 
-            stage('Promote to Release') {
+            stage('Release Promotion') {
                 steps {
                     script {
-                        // Logic to promote from staging to Release
-                        println 'Release'
+                        // Step 1: Logic to promote from staging to release
+                        println 'Release promotion logic goes here'
                     }
                 }
             }
@@ -102,30 +113,34 @@ def call() {
 
         post {
             success {
-                println 'W'
+                // Actions on successful pipeline execution
+                println 'Build succeeded.'
             }
             failure {
-                println 'L'
+                // Actions on pipeline failure
+                println 'Build failed.'
             }
         }
     }
 }
 
+// Utility method to run Maven commands with the CodeArtifact token
 def runMvn(String command) {
     configFileProvider([configFile(fileId: env.MVN_SETTINGS_FILE_ID, variable: 'SETTINGS_XML')]) {
-        // Directly output Maven command logs to console
         withEnv(["CODEARTIFACT_AUTH_TOKEN=${token}"]) {
             sh "${env.MVN_HOME}/bin/mvn -s ${SETTINGS_XML} ${command}"
         }
     }
 }
 
+// Generate an AWS CodeArtifact authorization token
 def generateCodeArtifactToken() {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
         return sh(script: "aws codeartifact get-authorization-token --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --region ${env.AWS_DEFAULT_REGION} --query authorizationToken --output text", returnStdout: true).trim()
     }
 }
 
+// Check if a specific package version exists in the specified repository
 def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
         def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
@@ -134,6 +149,7 @@ def hasPackage(String repository, String packageGroup, String packageName, Strin
     }
 }
 
+// Delete a specific package version from a repository
 def deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
         sh(script: "aws codeartifact delete-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}")
