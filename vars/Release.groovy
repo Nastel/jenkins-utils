@@ -34,9 +34,11 @@ def call() {
             stage('Initialize and Validate') {
                 steps {
                     script {
-                        sh 'printenv'
+
                         pom = readMavenPom file: 'pom.xml'
                         CODEARTIFACT_AUTH_TOKEN = generateCodeArtifactToken()
+
+                        sh 'printenv'
 
                         if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
                             error("Release version already exists in the repository.")
