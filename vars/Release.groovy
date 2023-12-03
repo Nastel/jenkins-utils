@@ -30,7 +30,7 @@ def call() {
                     script {
                         // Load variables from an external file within the shared library
                         def envVars = libraryResource('Env.groovy')
-                        if (envVars.exists()) {
+                        if (envVars) {
                             load envVars
                         }
 
