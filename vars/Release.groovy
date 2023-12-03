@@ -5,8 +5,6 @@ import hudson.model.Run
 import hudson.model.TaskListener
 import org.jenkinsci.plugins.workflow.steps.StepContext
 
-@Library('shared-libraries') _
-
 @Field
 CodeArtifact codeArtifact
 
