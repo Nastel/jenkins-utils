@@ -36,7 +36,12 @@ def call() {
                     script {
 
                         pom = readMavenPom file: 'pom.xml'
-                        env.CODEARTIFACT_AUTH_TOKEN = generateCodeArtifactToken()
+
+                        token = generateCodeArtifactToken()
+                        println "Token: $token"
+
+                        env.CODEARTIFACT_AUTH_TOKEN = token
+
 
                         sh 'printenv'
 
