@@ -29,13 +29,16 @@ def call() {
                 steps {
                     script {
                         // Load variables from an external file within the shared library
-                        def envFile = load 'env.properties'
+                        def envFile = libraryResource('env.properties')
+                        def props = new Properties()
+                        props.load(envFile.toInputStream())
+
                         // Load properties from the file into environment
-                        env.AWS_DOMAIN = envFile.AWS_DOMAIN
-                        env.AWS_DOMAIN_OWNER = envFile.AWS_DOMAIN_OWNER
-                        env.AWS_DEFAULT_REGION = envFile.AWS_DEFAULT_REGION
-                        env.AWS_CREDENTIALS_ID = envFile.AWS_CREDENTIALS_ID
-                        env.MVN_SETTINGS_FILE_ID = envFile.MVN_SETTINGS_FILE_ID
+                        env.AWS_DOMAIN = props.getProperty('AWS_DOMAIN')
+                        env.AWS_DOMAIN_OWNER = props.getProperty('AWS_DOMAIN_OWNER')
+                        env.AWS_DEFAULT_REGION = props.getProperty('AWS_DEFAULT_REGION')
+                        env.AWS_CREDENTIALS_ID = props.getProperty('AWS_CREDENTIALS_ID')
+                        env.MVN_SETTINGS_FILE_ID = props.getProperty('MVN_SETTINGS_FILE_ID')
 
                         // Dump all environment variables
                         sh 'printenv'
