@@ -51,12 +51,12 @@ def call() {
                             println 'Credentials not found'
                         }
 
-//                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-//                            sh 'printenv'
-////                            if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
-////                                error("Release version already exists in the repository.")
-////                            }
-//                        }
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                            sh 'printenv'
+//                            if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
+//                                error("Release version already exists in the repository.")
+//                            }
+                        }
                     }
                 }
 
