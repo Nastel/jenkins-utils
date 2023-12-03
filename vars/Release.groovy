@@ -38,6 +38,9 @@ def call() {
                     script {
                         // Step 1: Read Maven POM
                         pom = readMavenPom file: 'pom.xml'
+
+                        // Set POM_VERSION as an environment variable
+                        env.POM_VERSION = pom.version
                     }
                     script {
                         // Step 2: Update display name
@@ -56,6 +59,30 @@ def call() {
                     script {
                         // Step 5: Check for package in staging repository
                         isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
+                    }
+                }
+            }
+
+            stage('Cancel Pending Builds') {
+                steps {
+                    script {
+                        // Read the current version from POM
+                        def currentVersion = pom.version
+
+                        // Get the current job's builds
+                        def jobBuilds = currentBuild.rawBuild.parent.getBuilds()
+
+                        // Iterate over builds and abort if they have the same version and are pending
+                        jobBuilds.each { build ->
+                            if (build.isBuilding() || build.isInQueue()) {
+                                def buildVersion = build.getEnvironment().get('POM_VERSION')
+
+                                if (buildVersion == currentVersion && build.number != currentBuild.number) {
+                                    echo "Aborting build #${build.number} with version ${buildVersion}"
+                                    build.doStop() // Aborts the build
+                                }
+                            }
+                        }
                     }
                 }
             }
