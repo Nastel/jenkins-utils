@@ -28,9 +28,7 @@ def call() {
                 steps {
                     script {
                         // Dump all environment variables
-                        env.each { key, value ->
-                            echo "Environment variable: ${key} = ${value}"
-                        }
+                        sh 'env | sort'
 
                         pom = readMavenPom file: 'pom.xml'
                         codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION)
