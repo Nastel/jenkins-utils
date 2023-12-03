@@ -60,22 +60,19 @@ class CodeArtifact {
     String executeCommand(String command) {
         log.info("Executing command: $command")
 
-        def processBuilder = new ProcessBuilder(command.split(' '))
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: credentialsId]]) {
+            def processBuilder = new ProcessBuilder(command.split(' '))
+            processBuilder.redirectErrorStream(true)
+            Process process = processBuilder.start()
+            def output = process.text.trim()
+            process.waitFor()
 
-        // Set AWS credentials environment variables
-        processBuilder.environment().put("AWS_ACCESS_KEY_ID", credentials(credentialsId).getAwsAccessKeyId())
-        processBuilder.environment().put("AWS_SECRET_ACCESS_KEY", credentials(credentialsId).getAwsSecretKey())
+            if (process.exitValue() != 0) {
+                throw new Exception("Command execution failed with exit code: ${process.exitValue()}\nOutput: $output")
+            }
 
-        processBuilder.redirectErrorStream(true)
-        Process process = processBuilder.start()
-        def output = process.text.trim()
-        process.waitFor()
-
-        if (process.exitValue() != 0) {
-            throw new Exception("Command execution failed with exit code: ${process.exitValue()}\nOutput: $output")
+            return output
         }
-
-        return output
     }
 
     private String generateCall(String awsCommand, List<String> options) {
