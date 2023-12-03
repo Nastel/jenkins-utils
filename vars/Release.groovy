@@ -46,9 +46,9 @@ def call() {
                         env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
 
                         if (credentials('your-aws-credentials-id')) {
-                            echo 'Credentials found'
+                            println 'Credentials found'
                         } else {
-                            echo 'Credentials not found'
+                            println 'Credentials not found'
                         }
 
                         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
