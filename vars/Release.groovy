@@ -46,6 +46,10 @@ def call() {
                         codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION, env.AWS_CREDENTIALS_ID)
 
                         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                            sh '''
+                                aws codeartifact list-packages --domain $AWS_DOMAIN --domain-owner $AWS_DOMAIN_OWNER --repository releases --region $AWS_DEFAULT_REGION
+                            '''
+
                             env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
                         }
 
