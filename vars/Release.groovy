@@ -40,17 +40,21 @@ def call() {
                         pom = readMavenPom file: 'pom.xml'
                     }
                     script {
-                        // Step 2: Generate CodeArtifact Token
+                        // Step 2: Update display name
+                        currentBuild.displayName = "${pom.artifactId}-${pom.version} #${env.BUILD_NUMBER}"
+                    }
+                    script {
+                        // Step 3: Generate CodeArtifact Token
                         token = generateCodeArtifactToken()
                     }
                     script {
-                        // Step 3: Check for existing release version
+                        // Step 4: Check for existing release version
                         if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
                             error("Release version already exists in the repository.")
                         }
                     }
                     script {
-                        // Step 4: Check for package in staging repository
+                        // Step 5: Check for package in staging repository
                         isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
                     }
                 }
