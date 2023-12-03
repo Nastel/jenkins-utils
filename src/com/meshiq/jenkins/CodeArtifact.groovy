@@ -1,5 +1,6 @@
 //file:noinspection GrMethodMayBeStatic
 package com.meshiq.jenkins
+import com.cloudbees.groovy.cps.NonCPS
 
 import java.lang.ProcessBuilder
 import java.util.logging.Logger
@@ -20,11 +21,13 @@ class CodeArtifact {
         this.credentialsId = credentialsId
     }
 
+    @NonCPS
     String generateToken() {
         String command = "aws codeartifact get-authorization-token --domain $awsDomain --domain-owner $awsDomainOwner --region $awsRegion --query authorizationToken --output text"
         return executeCommand(command)
     }
 
+    @NonCPS
     boolean hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
         validateParameters(repository, packageGroup, packageName, packageVersion)
         String command = generateCall('list-package-versions', [
@@ -42,6 +45,7 @@ class CodeArtifact {
         return output && output.trim() == packageVersion
     }
 
+    @NonCPS
     void deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
         validateParameters(repository, packageGroup, packageName, packageVersion)
         String command = generateCall('delete-package-versions', [
@@ -57,6 +61,7 @@ class CodeArtifact {
         executeCommand(command)
     }
 
+    @NonCPS
     String executeCommand(String command) {
         log.info("Executing command: $command")
 
@@ -75,10 +80,12 @@ class CodeArtifact {
         }
     }
 
+    @NonCPS
     private String generateCall(String awsCommand, List<String> options) {
         return "aws codeartifact $awsCommand " + options.join(' ')
     }
 
+    @NonCPS
     private void validateParameters(String... params) {
         params.each { param ->
             if (param == null || param.isEmpty()) {

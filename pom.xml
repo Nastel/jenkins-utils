@@ -7,7 +7,22 @@
     <artifactId>jenkins-utils</artifactId> <!-- Replace with your artifact ID -->
     <version>11.1.0</version>
 
+<!--    <repositories>-->
+<!--&lt;!&ndash;         Jenkins Releases Repository &ndash;&gt;-->
+<!--                <repository>-->
+<!--                    <id>jenkins-releases</id>-->
+<!--                    <url>https://repo.jenkins-ci.org/releases/</url>-->
+<!--                </repository>-->
 
+<!--        &lt;!&ndash; Explicit Maven Central Repository &ndash;&gt;-->
+<!--&lt;!&ndash;        <repository>&ndash;&gt;-->
+<!--&lt;!&ndash;            <id>central</id>&ndash;&gt;-->
+<!--&lt;!&ndash;            <url>https://repo.maven.apache.org/maven2</url>&ndash;&gt;-->
+<!--&lt;!&ndash;            <snapshots>&ndash;&gt;-->
+<!--&lt;!&ndash;                <enabled>false</enabled>&ndash;&gt;-->
+<!--&lt;!&ndash;            </snapshots>&ndash;&gt;-->
+<!--&lt;!&ndash;        </repository>&ndash;&gt;-->
+<!--    </repositories>-->
 
     <dependencies>
         <!-- Jenkins API -->
@@ -18,6 +33,15 @@
 <!--            <scope>provided</scope>-->
 <!--        </dependency>-->
         <!-- Groovy -->
+
+        <!-- https://mvnrepository.com/artifact/com.cloudbees/groovy-cps -->
+        <dependency>
+            <groupId>com.cloudbees</groupId>
+            <artifactId>groovy-cps</artifactId>
+            <version>1.31</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.apache.groovy</groupId>
             <artifactId>groovy-all</artifactId>
