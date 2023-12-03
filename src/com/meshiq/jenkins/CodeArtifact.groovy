@@ -1,5 +1,6 @@
 //file:noinspection GrMethodMayBeStatic
 package com.meshiq.jenkins
+
 import com.cloudbees.groovy.cps.NonCPS
 
 import java.lang.ProcessBuilder
@@ -65,19 +66,19 @@ class CodeArtifact {
     String executeCommand(String command) {
         log.info("Executing command: $command")
 
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: credentialsId]]) {
-            def processBuilder = new ProcessBuilder(command.split(' '))
-            processBuilder.redirectErrorStream(true)
-            Process process = processBuilder.start()
-            def output = process.text.trim()
-            process.waitFor()
 
-            if (process.exitValue() != 0) {
-                throw new Exception("Command execution failed with exit code: ${process.exitValue()}\nOutput: $output")
-            }
+        def processBuilder = new ProcessBuilder(command.split(' '))
+        processBuilder.redirectErrorStream(true)
+        Process process = processBuilder.start()
+        def output = process.text.trim()
+        process.waitFor()
 
-            return output
+        if (process.exitValue() != 0) {
+            throw new Exception("Command execution failed with exit code: ${process.exitValue()}\nOutput: $output")
         }
+
+        return output
+
     }
 
     @NonCPS

@@ -45,8 +45,10 @@ def call() {
                         codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION, env.AWS_CREDENTIALS_ID)
                         env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
 
-                        if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
-                            error("Release version already exists in the repository.")
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                            if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
+                                error("Release version already exists in the repository.")
+                            }
                         }
                     }
                 }
