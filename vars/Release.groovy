@@ -6,112 +6,111 @@ import hudson.model.TaskListener
 import org.jenkinsci.plugins.workflow.steps.StepContext
 
 @Library('shared-libraries') _
-class Release {
 
-    @Field
-    private CodeArtifact codeArtifact
+@Field
+CodeArtifact codeArtifact
 
-    @Field
-    private def pom
+@Field
+def pom
 
-    def call() {
-        pipeline {
-            agent any
+def call() {
+    pipeline {
+        agent any
 
-            tools {
-                maven 'M3'
-                jdk 'JDK11'
-            }
+        tools {
+            maven 'M3'
+            jdk 'JDK11'
+        }
 
-            environment {
-                MVN_HOME = tool 'M3'
-                JAVA_HOME = tool 'JDK11'
-                AWS_DEFAULT_REGION = 'eu-central-1'
-                AWS_DOMAIN = 'nastel'
-                AWS_DOMAIN_OWNER = '672553873710'
-                AWS_CREDENTIALS_ID = 'nastel-aws-maintainer'
-                MVN_SETTINGS_FILE_ID = 'nastel-maven-settings'
-                CODEARTIFACT_AUTH_TOKEN = ''
-            }
+        environment {
+            MVN_HOME = tool 'M3'
+            JAVA_HOME = tool 'JDK11'
+            AWS_DEFAULT_REGION = 'eu-central-1'
+            AWS_DOMAIN = 'nastel'
+            AWS_DOMAIN_OWNER = '672553873710'
+            AWS_CREDENTIALS_ID = 'nastel-aws-maintainer'
+            MVN_SETTINGS_FILE_ID = 'nastel-maven-settings'
+            CODEARTIFACT_AUTH_TOKEN = ''
+        }
 
-            stages {
-                stage('Initialize and Validate') {
-                    steps {
-                        script {
-                            pom = readMavenPom file: 'pom.xml'
-                            codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER)
-                            env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
+        stages {
+            stage('Initialize and Validate') {
+                steps {
+                    script {
+                        pom = readMavenPom file: 'pom.xml'
+                        codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER)
+                        env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
 
-                            if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
-                                error("Release version already exists in the repository.")
-                            }
-                        }
-                    }
-                }
-
-                stage('Build') {
-                    steps {
-                        script {
-                            runMvn("clean package")
-                        }
-                    }
-                }
-
-                stage('Check Staging and Pending Builds') {
-                    steps {
-                        script {
-                            if (codeArtifact.hasPackage('staging', pom.groupId, pom.artifactId, pom.version)) {
-                                input message: "Package already exists in staging. Delete it?", ok: 'Yes'
-                                codeArtifact.deletePackage('staging', pom.groupId, pom.artifactId, pom.version)
-                            }
-
-                            // Logic to check and cancel pending Jenkins builds if needed
-                            // This requires additional implementation
-                        }
-                    }
-                }
-
-                stage('Promote to Staging') {
-                    steps {
-                        script {
-                            runMvn("deploy -DaltDeploymentRepository=staging-repo")
-                            // Additional steps might be needed for promotion
-                        }
-                    }
-                }
-
-                stage('QA Confirmation') {
-                    steps {
-                        script {
-                            input message: "Has QA approved the staging artifacts?", ok: 'Yes'
-                        }
-                    }
-                }
-
-                stage('Promote to Release') {
-                    steps {
-                        script {
-                            // Logic to promote from staging to Release
-                            // This may involve copying artifacts and updating metadata
+                        if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
+                            error("Release version already exists in the repository.")
                         }
                     }
                 }
             }
 
-            post {
-                success {
-                    // Post-success steps
+            stage('Build') {
+                steps {
+                    script {
+                        runMvn("clean package")
+                    }
                 }
-                failure {
-                    // Failure handling
+            }
+
+            stage('Check Staging and Pending Builds') {
+                steps {
+                    script {
+                        if (codeArtifact.hasPackage('staging', pom.groupId, pom.artifactId, pom.version)) {
+                            input message: "Package already exists in staging. Delete it?", ok: 'Yes'
+                            codeArtifact.deletePackage('staging', pom.groupId, pom.artifactId, pom.version)
+                        }
+
+                        // Logic to check and cancel pending Jenkins builds if needed
+                        // This requires additional implementation
+                    }
+                }
+            }
+
+            stage('Promote to Staging') {
+                steps {
+                    script {
+                        runMvn("deploy -DaltDeploymentRepository=staging-repo")
+                        // Additional steps might be needed for promotion
+                    }
+                }
+            }
+
+            stage('QA Confirmation') {
+                steps {
+                    script {
+                        input message: "Has QA approved the staging artifacts?", ok: 'Yes'
+                    }
+                }
+            }
+
+            stage('Promote to Release') {
+                steps {
+                    script {
+                        // Logic to promote from staging to Release
+                        // This may involve copying artifacts and updating metadata
+                    }
                 }
             }
         }
-    }
 
-    def runMvn(String command) {
-        withCredentials([file(credentialsId: env.MVN_SETTINGS_FILE_ID, variable: 'SETTINGS_XML')]) {
-            sh "${env.MVN_HOME}/bin/mvn -s ${SETTINGS_XML} ${command}"
+        post {
+            success {
+                // Post-success steps
+            }
+            failure {
+                // Failure handling
+            }
         }
     }
 }
+
+def runMvn(String command) {
+    withCredentials([file(credentialsId: env.MVN_SETTINGS_FILE_ID, variable: 'SETTINGS_XML')]) {
+        sh "${env.MVN_HOME}/bin/mvn -s ${SETTINGS_XML} ${command}"
+    }
+}
+
