@@ -66,18 +66,14 @@ class CodeArtifact {
     String executeCommand(String command) {
         log.info("Executing command: $command")
 
-        def processBuilder = new ProcessBuilder(command.split(' '))
-        processBuilder.redirectErrorStream(true)
-        Process process = processBuilder.start()
-        def output = process.text.trim()
-        process.waitFor()
+        // Use the sh step to execute the command
+        def output = sh(script: command, returnStatus: true).trim()
 
-        if (process.exitValue() != 0) {
-            throw new Exception("Command execution failed with exit code: ${process.exitValue()}\nOutput: $output")
+        if (currentBuild.resultIsWorseOrEqualTo('FAILURE')) {
+            throw new Exception("Command execution failed: $command")
         }
 
         return output
-
     }
 
     @NonCPS

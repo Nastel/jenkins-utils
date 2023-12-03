@@ -28,7 +28,7 @@ def call() {
             AWS_DEFAULT_REGION = 'eu-central-1'
 
             // Jenkins AWS Credentials ID
-            AWS_CREDENTIALS_ID = 'nastel-aws-maintainer'
+            AWS_CREDENTIALS_ID = 'aws-ca-user'
 
             // Jenkins Maven Settings ID
             MVN_SETTINGS_FILE_ID = 'nastel-maven-settings'
