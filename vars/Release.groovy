@@ -69,21 +69,33 @@ def call() {
                         // Read the current version from POM
                         def currentVersion = pom.version
 
-                        // Get the current job's builds
-                        def jobBuilds = currentBuild.rawBuild.parent.getBuilds()
+                        // Get the current job's name
+                        def jobName = env.JOB_NAME
 
-                        // Iterate over builds and abort if they have the same version and are pending
-                        jobBuilds.each { build ->
-                            if (build.isBuilding() || build.isInQueue()) {
-                                def buildVersion = build.getEnvironment().get('POM_VERSION')
+                        // Access all builds of the current job
+                        def job = Jenkins.instance.getItemByFullName(jobName)
 
-                                if (buildVersion == currentVersion && build.number != currentBuild.number) {
-                                    echo "Aborting build #${build.number} with version ${buildVersion}"
-                                    build.doStop() // Aborts the build
+                        // Ensure we have access to the job and its builds
+                        if (job && job.builds) {
+                            job.builds.each { build ->
+                                // Exclude the current build from the check
+                                if (build.number != currentBuild.number) {
+                                    // Safely access build details
+                                    def buildVars = build.getBuildVariables()
+                                    def buildVersion = buildVars.get('POM_VERSION')
+
+                                    // Check if the build version matches and if it's still running
+                                    if (buildVersion == currentVersion && (build.isBuilding() || build.isInQueue())) {
+                                        echo "Aborting build #${build.number} with version ${buildVersion}"
+                                        build.doStop() // Abort the build
+                                    }
                                 }
                             }
+                        } else {
+                            echo "Unable to access job builds for ${jobName}"
                         }
                     }
+
                 }
             }
 
