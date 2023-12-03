@@ -8,7 +8,7 @@ CodeArtifact codeArtifact
 def pom
 
 def call() {
-    load 'Env.groovy'
+
 
     pipeline {
         agent any
@@ -28,6 +28,8 @@ def call() {
             stage('Initialize and Validate') {
                 steps {
                     script {
+                        load 'Env.groovy'
+
                         // Dump all environment variables
                         sh 'printenv'
 
