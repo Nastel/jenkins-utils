@@ -4,6 +4,7 @@ import hudson.FilePath
 import hudson.model.Run
 import hudson.model.TaskListener
 import org.jenkinsci.plugins.workflow.steps.StepContext
+import groovy.transform.Field
 
 @Field
 CodeArtifact codeArtifact
