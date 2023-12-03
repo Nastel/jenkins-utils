@@ -39,7 +39,7 @@ def call() {
                 steps {
                     script {
                         // Dump all environment variables
-                        sh 'printenv'
+                        //sh 'printenv'
 
                         pom = readMavenPom file: 'pom.xml'
                         codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION, env.AWS_CREDENTIALS_ID)
