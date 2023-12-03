@@ -1,4 +1,3 @@
-
 // AWS Properties
 env.AWS_DOMAIN = 'nastel'
 env.AWS_DOMAIN_OWNER = '672553873710'
