@@ -1,6 +1,8 @@
 def pom
 def token
 
+def isPackageInStagingRepo = false
+
 def call() {
     pipeline {
         agent any
@@ -43,6 +45,19 @@ def call() {
                         if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
                             error("Release version already exists in the repository.")
                         }
+
+                        isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
+                    }
+                }
+            }
+
+            stage('Confirm  Rebuild') {
+                when {
+                    expression { isPackageInStagingRepo }
+                }
+                steps {
+                    script {
+                        input message: "Package already exists in staging. Proceed with build?", ok: 'Yes'
                     }
                 }
             }
@@ -55,20 +70,13 @@ def call() {
                 }
             }
 
-            stage('Check Staging and Pending Builds') {
-                steps {
-                    script {
-                        if (hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)) {
-                            input message: "Package already exists in staging. Delete it?", ok: 'Yes'
-                            deletePackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
-                        }
-                    }
-                }
-            }
-
             stage('Promote to Staging') {
                 steps {
                     script {
+                        if (isPackageInStagingRepo) {
+                            deletePackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
+                        }
+
                         runMvn("deploy -DaltDeploymentRepository=staging-repo")
                     }
                 }
