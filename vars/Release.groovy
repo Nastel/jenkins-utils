@@ -1,14 +1,6 @@
-import com.meshiq.jenkins.CodeArtifact
-import groovy.transform.Field
-
-@Field
-CodeArtifact codeArtifact
-
-@Field
 def pom
 
 def call() {
-
     pipeline {
         agent any
 
@@ -32,36 +24,25 @@ def call() {
 
             // Jenkins Maven Settings ID
             MVN_SETTINGS_FILE_ID = 'nastel-maven-settings'
+
+            // Repository Variables
+            RELEASES_REPO = 'releases'
+            STAGING_REPO = 'staging'
         }
 
         stages {
             stage('Initialize and Validate') {
                 steps {
                     script {
-                        // Dump all environment variables
                         sh 'printenv'
-
                         pom = readMavenPom file: 'pom.xml'
+                        CODEARTIFACT_AUTH_TOKEN = generateCodeArtifactToken()
 
-                        codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION, env.AWS_CREDENTIALS_ID)
-
-                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-                            sh '''
-                                aws codeartifact list-packages --domain $AWS_DOMAIN --domain-owner $AWS_DOMAIN_OWNER --repository releases --region $AWS_DEFAULT_REGION
-                            '''
-
-                            env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
-                        }
-
-                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-                            sh 'printenv'
-                            if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
-                                error("Release version already exists in the repository.")
-                            }
+                        if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
+                            error("Release version already exists in the repository.")
                         }
                     }
                 }
-
             }
 
             stage('Build') {
@@ -75,13 +56,10 @@ def call() {
             stage('Check Staging and Pending Builds') {
                 steps {
                     script {
-                        if (codeArtifact.hasPackage('staging', pom.groupId, pom.artifactId, pom.version)) {
+                        if (hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)) {
                             input message: "Package already exists in staging. Delete it?", ok: 'Yes'
-                            codeArtifact.deletePackage('staging', pom.groupId, pom.artifactId, pom.version)
+                            deletePackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
                         }
-
-                        // Logic to check and cancel pending Jenkins builds if needed
-                        // This requires additional implementation
                     }
                 }
             }
@@ -90,7 +68,6 @@ def call() {
                 steps {
                     script {
                         runMvn("deploy -DaltDeploymentRepository=staging-repo")
-                        // Additional steps might be needed for promotion
                     }
                 }
             }
@@ -107,7 +84,6 @@ def call() {
                 steps {
                     script {
                         // Logic to promote from staging to Release
-                        // This may involve copying artifacts and updating metadata
                         println 'Release'
                     }
                 }
@@ -116,11 +92,9 @@ def call() {
 
         post {
             success {
-                // Post-success steps
                 println 'W'
             }
             failure {
-                // Failure handling
                 println 'L'
             }
         }
@@ -133,3 +107,22 @@ def runMvn(String command) {
     }
 }
 
+def generateCodeArtifactToken() {
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+        return sh(script: "aws codeartifact get-authorization-token --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --region ${env.AWS_DEFAULT_REGION} --query authorizationToken --output text", returnStdout: true).trim()
+    }
+}
+
+def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
+        def output = sh(script: command, returnStdout: true).trim()
+        return output && output == packageVersion
+    }
+}
+
+def deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+        sh(script: "aws codeartifact delete-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}")
+    }
+}
