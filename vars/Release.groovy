@@ -37,18 +37,18 @@ def call() {
         stages {
             stage('Initialize and Validate') {
                 steps {
-                        // Dump all environment variables
-                        sh 'printenv'
+                    // Dump all environment variables
+                    sh 'printenv'
 
-                        pom = readMavenPom file: 'pom.xml'
-                        codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION)
-                        env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
+                    pom = readMavenPom file: 'pom.xml'
+                    codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION)
+                    env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
 
-                        if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
-                            error("Release version already exists in the repository.")
-                        }
+                    if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
+                        error("Release version already exists in the repository.")
                     }
                 }
+
             }
 
             stage('Build') {
