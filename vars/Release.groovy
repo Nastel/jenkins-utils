@@ -29,10 +29,13 @@ def call() {
                 steps {
                     script {
                         // Load variables from an external file within the shared library
-                        def envVars = libraryResource('Env.groovy')
-                        if (envVars) {
-                            load envVars
-                        }
+                        def envFile = load 'env.properties'
+                        // Load properties from the file into environment
+                        env.AWS_DOMAIN = envFile.AWS_DOMAIN
+                        env.AWS_DOMAIN_OWNER = envFile.AWS_DOMAIN_OWNER
+                        env.AWS_DEFAULT_REGION = envFile.AWS_DEFAULT_REGION
+                        env.AWS_CREDENTIALS_ID = envFile.AWS_CREDENTIALS_ID
+                        env.MVN_SETTINGS_FILE_ID = envFile.MVN_SETTINGS_FILE_ID
 
                         // Dump all environment variables
                         sh 'printenv'
