@@ -8,6 +8,8 @@ CodeArtifact codeArtifact
 def pom
 
 def call() {
+    load 'Env.groovy'
+
     pipeline {
         agent any
 
@@ -20,7 +22,6 @@ def call() {
             MVN_HOME = tool 'M3'
             JAVA_HOME = tool 'JDK11'
             CODEARTIFACT_AUTH_TOKEN = ''
-            AWS_DOMAIN = 'nastel'
         }
 
         stages {
@@ -28,11 +29,10 @@ def call() {
                 steps {
                     script {
                         // Dump all environment variables
-                        sh 'env | sort'
+                        sh 'printenv'
 
                         pom = readMavenPom file: 'pom.xml'
                         codeArtifact = new CodeArtifact(env.AWS_DOMAIN, env.AWS_DOMAIN_OWNER, env.AWS_DEFAULT_REGION)
-                        println "[$env.AWS_DOMAIN][$env.AWS_DOMAIN_OWNER][$env.AWS_DEFAULT_REGION]"
                         env.CODEARTIFACT_AUTH_TOKEN = codeArtifact.generateToken()
 
                         if (codeArtifact.hasPackage('releases', pom.groupId, pom.artifactId, pom.version)) {
