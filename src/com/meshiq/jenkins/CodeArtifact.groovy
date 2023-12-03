@@ -11,6 +11,7 @@ class CodeArtifact {
     private final String awsDomain
     private final String awsDomainOwner
     private final String awsRegion
+    private final String credentialsId
 
     CodeArtifact(String awsDomain, String awsDomainOwner, String awsRegion, credentialsId) {
         this.awsDomain = awsDomain
