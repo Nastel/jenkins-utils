@@ -28,7 +28,11 @@ def call() {
             stage('Initialize and Validate') {
                 steps {
                     script {
-                        load 'Env.groovy'
+                        // Load variables from an external file within the shared library
+                        def envVars = libraryResource('Env.groovy')
+                        if (envVars.exists()) {
+                            load envVars
+                        }
 
                         // Dump all environment variables
                         sh 'printenv'
