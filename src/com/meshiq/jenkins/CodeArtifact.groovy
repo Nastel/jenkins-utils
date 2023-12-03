@@ -2,8 +2,11 @@
 package com.meshiq.jenkins
 
 import java.lang.ProcessBuilder
+import java.util.logging.Logger
 
 class CodeArtifact {
+
+    private static final Logger log = Logger.getLogger(this.class.name)
 
     private final String awsDomain
     private final String awsDomainOwner
@@ -53,7 +56,7 @@ class CodeArtifact {
     }
 
     String executeCommand(String command) {
-        println "executing: $command"
+        log.info("Executing command: $command")
         def processBuilder = new ProcessBuilder(command.split(' '))
         processBuilder.redirectErrorStream(true)
         Process process = processBuilder.start()
