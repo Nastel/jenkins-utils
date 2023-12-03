@@ -1,9 +1,4 @@
 import com.meshiq.jenkins.CodeArtifact
-import org.jenkinsci.plugins.workflow.libs.Library
-import hudson.FilePath
-import hudson.model.Run
-import hudson.model.TaskListener
-import org.jenkinsci.plugins.workflow.steps.StepContext
 import groovy.transform.Field
 
 @Field
@@ -91,6 +86,7 @@ def call() {
                     script {
                         // Logic to promote from staging to Release
                         // This may involve copying artifacts and updating metadata
+                        println 'Release'
                     }
                 }
             }
@@ -99,9 +95,11 @@ def call() {
         post {
             success {
                 // Post-success steps
+                println 'W'
             }
             failure {
                 // Failure handling
+                println 'L'
             }
         }
     }
