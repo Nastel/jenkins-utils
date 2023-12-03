@@ -66,7 +66,6 @@ class CodeArtifact {
     String executeCommand(String command) {
         log.info("Executing command: $command")
 
-
         def processBuilder = new ProcessBuilder(command.split(' '))
         processBuilder.redirectErrorStream(true)
         Process process = processBuilder.start()
