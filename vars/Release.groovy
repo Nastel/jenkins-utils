@@ -1,4 +1,5 @@
 def pom
+def token
 
 def call() {
     pipeline {
@@ -38,12 +39,6 @@ def call() {
                         pom = readMavenPom file: 'pom.xml'
 
                         token = generateCodeArtifactToken()
-                        println "Token: $token"
-
-                        env.CODEARTIFACT_AUTH_TOKEN = token
-
-
-                        sh 'printenv'
 
                         if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
                             error("Release version already exists in the repository.")
@@ -111,7 +106,9 @@ def call() {
 def runMvn(String command) {
     configFileProvider([configFile(fileId: env.MVN_SETTINGS_FILE_ID, variable: 'SETTINGS_XML')]) {
         // Directly output Maven command logs to console
-        sh "${env.MVN_HOME}/bin/mvn -s ${SETTINGS_XML} ${command}"
+        withEnv(["CODEARTIFACT_AUTH_TOKEN=${token}"]) {
+            sh "${env.MVN_HOME}/bin/mvn -s ${SETTINGS_XML} ${command}"
+        }
     }
 }
 
