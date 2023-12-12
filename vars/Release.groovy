@@ -110,6 +110,14 @@ def call() {
             stage('Fingerprint Artifacts') {
                 steps {
                     script {
+                        // Generate the list of dependencies
+                        sh "mvn dependency:list -DincludeGroupIds=com.nastel -DoutputFile=deps.txt"
+
+                        // Dump the contents of deps.txt to the log
+                        echo 'Dependencies List:'
+                        echo readFile('deps.txt')
+
+
                         // Fingerprint BOM files and JARs
                         def artifacts = findFiles(glob: '**/target/**/*.jar')
                         artifacts.each {
