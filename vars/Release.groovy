@@ -135,7 +135,7 @@ def call() {
                 steps {
                     script {
                         // Step 1: Logic to promote from staging to release
-                        println 'Release promotion logic goes here'
+                        copyPackage(env.STAGING_REPO, env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)
                     }
                 }
             }
@@ -194,6 +194,13 @@ def hasPackage(String repository, String packageGroup, String packageName, Strin
 def deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
         sh(script: "aws codeartifact delete-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}")
+    }
+}
+
+// Function to copy a package version from one repository to another
+def copyPackage(String sourceRepository, String destinationRepository, String packageGroup, String packageName, String packageVersion) {
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+        sh(script: "aws codeartifact copy-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --source-repository ${sourceRepository} --destination-repository ${destinationRepository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}")
     }
 }
 
