@@ -107,21 +107,37 @@ def call() {
                 }
             }
 
+//            stage('Fingerprint Artifacts') {
+//                steps {
+//                    script {
+//                        // Generate the list of dependencies
+//                        sh "mvn dependency:list -DoutputFile=deps.txt"
+//
+//                        // Dump the contents of deps.txt to the log
+//                        echo 'Dependencies List:'
+//                        echo readFile('deps.txt')
+//
+//                        // Fingerprint BOM files and JARs
+//                        def artifacts = findFiles(glob: '**/target/**/*.jar')
+//                        artifacts.each {
+//                            println "${it.path}"
+//                            fingerprint it.path
+//                        }
+//                    }
+//                }
+//            }
+
             stage('Fingerprint Artifacts') {
                 steps {
                     script {
-                        // Generate the list of dependencies
-                        sh "mvn dependency:list -DoutputFile=deps.txt"
+                        def pom = readMavenPom file: 'pom.xml'
+                        fingerprintDependencies('pom.xml', 'com.nastel') // For main project
 
-                        // Dump the contents of deps.txt to the log
-                        echo 'Dependencies List:'
-                        echo readFile('deps.txt')
-
-                        // Fingerprint BOM files and JARs
-                        def artifacts = findFiles(glob: '**/target/**/*.jar')
-                        artifacts.each {
-                            println "${it.path}"
-                            fingerprint it.path
+                        if (pom.modules) {
+                            pom.modules.each { module ->
+                                def submodulePomPath = "${module}/pom.xml"
+                                fingerprintDependencies(submodulePomPath, 'com.nastel') // For each submodule
+                            }
                         }
                     }
                 }
@@ -261,4 +277,26 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
     }
 
     return pendingBuildNumbers
+}
+
+def fingerprintDependencies(String pomPath, String groupId) {
+    // Read the specified POM file
+    def pom = readMavenPom file: pomPath
+
+    // Fingerprint the JAR file of the project
+    def artifactPath = "${pomPath.replace('pom.xml', '')}target/${pom.artifactId}-${pom.version}.jar"
+    fingerprint artifactPath
+
+    // List and fingerprint dependencies
+    sh "mvn -f ${pomPath} dependency:list -DoutputFile=deps.txt -DincludeGroupIds=${groupId}"
+    def deps = readFile('deps.txt').readLines()
+    deps.each { line ->
+        if (line.contains(groupId)) {
+            def parts = line.split(':')
+            def artifact = parts[1].trim()
+            def version = parts[3].trim()
+            def depArtifactPath = "${mavenRepoLocal}/${groupId.replace('.', '/')}/${artifact}/${version}/${artifact}-${version}.jar"
+            fingerprint depArtifactPath
+        }
+    }
 }
