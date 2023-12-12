@@ -286,6 +286,7 @@ def fingerprintDependencies(String pomPath, String groupId) {
     // Fingerprint the JAR file of the project
     def artifactPath = "${pomPath.replace('pom.xml', '')}target/${pom.artifactId}-${pom.version}.jar"
     fingerprint artifactPath
+    println "FP: ${artifactPath}"
 
     // List and fingerprint dependencies
     sh "mvn -f ${pomPath} dependency:list -DoutputFile=deps.txt -DincludeGroupIds=${groupId}"
@@ -297,6 +298,7 @@ def fingerprintDependencies(String pomPath, String groupId) {
             def version = parts[3].trim()
             def depArtifactPath = "${mavenRepoLocal}/${groupId.replace('.', '/')}/${artifact}/${version}/${artifact}-${version}.jar"
             fingerprint depArtifactPath
+            println "FP: ${depArtifactPath}"
         }
     }
 }
