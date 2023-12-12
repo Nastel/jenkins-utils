@@ -84,7 +84,7 @@ def call() {
                                         def buildVersion = match[0][1]
 
                                         // Check if the build version matches and if it's still running
-                                        if (buildVersion == pom.version && (build.isBuilding() || build.isInQueue())) {
+                                        if (buildVersion == pom.version && build.isBuilding()) {
                                             echo "Aborting build #${build.number} with version ${buildVersion}"
                                             build.doStop() // Abort the build
                                         }
