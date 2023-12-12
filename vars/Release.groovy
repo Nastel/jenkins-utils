@@ -186,9 +186,20 @@ def generateCodeArtifactToken() {
 // Check if a specific package version exists in the specified repository
 def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
-        def output = sh(script: command, returnStdout: true).trim()
-        return output && output == packageVersion
+        try {
+            def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
+            def output = sh(script: command, returnStdout: true).trim()
+            return output && output == packageVersion
+        } catch (Exception e) {
+            // Check if the exception is due to the package not being found
+            if (e.message.contains("ResourceNotFoundException")) {
+                println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
+                return false
+            } else {
+                // Rethrow other exceptions
+                throw e
+            }
+        }
     }
 }
 
