@@ -63,36 +63,38 @@ def call() {
                 }
             }
 
-            stage('Cancel Pending Builds') {
+            stage('Check Pending Builds') {
                 steps {
                     script {
-                        // Get the current job's name
                         def jobName = env.JOB_NAME
+                        def pendingBuilds = []
 
                         // Access all builds of the current job
                         def job = Jenkins.instance.getItemByFullName(jobName)
 
-                        // Ensure we have access to the job and its builds
+                        // Check for pending builds
                         if (job && job.builds) {
                             job.builds.each { build ->
-                                // Exclude the current build from the check
-                                if (build.number != currentBuild.number) {
-                                    // Extract version from build's display name
+                                if (build.number != currentBuild.number && build.isBuilding()) {
                                     def buildDisplayName = build.displayName
                                     def match = buildDisplayName =~ /^(\d+\.\d+\.\d+) #\d+/
-                                    if (match) {
-                                        def buildVersion = match[0][1]
-
-                                        // Check if the build version matches and if it's still running
-                                        if (buildVersion == pom.version && build.isBuilding()) {
-                                            echo "Aborting build #${build.number} with version ${buildVersion}"
-                                            build.doStop() // Abort the build
-                                        }
+                                    if (match && match[0][1] == pom.version) {
+                                        pendingBuilds.add(build)
                                     }
                                 }
                             }
                         } else {
                             echo "Unable to access job builds for ${jobName}"
+                        }
+
+                        // If there are pending builds, ask for user input
+                        if (!pendingBuilds.isEmpty()) {
+                            input message: 'Pending builds found. Cancel them?', ok: 'Yes'
+
+                            pendingBuilds.each { build ->
+                                echo "Aborting build #${build.number} with version ${pom.version}"
+                                build.doStop() // Abort the build
+                            }
                         }
                     }
                 }
