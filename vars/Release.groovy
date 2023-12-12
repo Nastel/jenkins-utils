@@ -130,7 +130,7 @@ def call() {
                     }
                     script {
                         // Step 2: Deploy to staging repository
-                        runMvn("deploy -DaltDeploymentRepository=staging-repo")
+                        runMvn("deploy -P staging")
                     }
                 }
             }
