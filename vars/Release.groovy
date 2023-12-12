@@ -17,15 +17,15 @@ def call() {
             CODEARTIFACT_AUTH_TOKEN = ''
 
             // AWS Properties
-            AWS_DOMAIN = 'nastel'
-            AWS_DOMAIN_OWNER = '672553873710'
-            AWS_DEFAULT_REGION = 'eu-central-1'
+            AWS_DOMAIN = 'meshiq'
+            AWS_DOMAIN_OWNER = '592078199039'
+            AWS_DEFAULT_REGION = 'us-east-1'
 
             // Jenkins AWS Credentials ID
-            AWS_CREDENTIALS_ID = 'aws-ca-user'
+            AWS_CREDENTIALS_ID = 'codearetifact-user'
 
             // Jenkins Maven Settings ID
-            MVN_SETTINGS_FILE_ID = 'nastel-maven-settings'
+            MVN_SETTINGS_FILE_ID = 'codeartifact-maven-settings'
 
             // Repository Variables
             RELEASES_REPO = 'releases'
