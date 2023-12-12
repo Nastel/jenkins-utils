@@ -189,7 +189,7 @@ def hasPackage(String repository, String packageGroup, String packageName, Strin
         def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text 2>&1"
         def output = sh(script: command, returnStdout: true).trim()
 
-        if (output && output == packageVersion) {
+        if (output.contains("version: '${packageVersion}'")) {
             return true
         } else if (output.contains("ResourceNotFoundException")) {
             println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
@@ -199,6 +199,7 @@ def hasPackage(String repository, String packageGroup, String packageName, Strin
         }
     }
 }
+
 
 
 // Delete a specific package version from a repository
