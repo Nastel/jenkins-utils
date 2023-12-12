@@ -67,19 +67,19 @@ def call() {
                 steps {
                     script {
                         def jobName = env.JOB_NAME
-                        def pendingBuilds = []
+                        def pendingBuildNumbers = [] // Store build numbers
 
                         // Access all builds of the current job
                         def job = Jenkins.instance.getItemByFullName(jobName)
 
-                        // Check for pending builds
+                        // Check for pending builds and store their numbers
                         if (job && job.builds) {
                             job.builds.each { build ->
                                 if (build.number != currentBuild.number && build.isBuilding()) {
                                     def buildDisplayName = build.displayName
-                                    def match = buildDisplayName =~ /^(\d+\.\d+\.\d+) #\d+/
+                                    def match = buildDisplayName =~ /^(\d+\.\d+\.\d+) #(\d+)/
                                     if (match && match[0][1] == pom.version) {
-                                        pendingBuilds.add(build)
+                                        pendingBuildNumbers.add(match[0][2].toInteger()) // Store the build number
                                     }
                                 }
                             }
@@ -88,18 +88,25 @@ def call() {
                         }
 
                         // If there are pending builds, ask for user input
-                        if (!pendingBuilds.isEmpty()) {
-                            input message: 'Pending builds found. Cancel them?', ok: 'Yes'
+                        if (!pendingBuildNumbers.isEmpty()) {
+                            def userInput = input(
+                                    id: 'userInput', message: 'Pending builds found. Cancel them?', ok: 'Yes'
+                            )
 
-                            pendingBuilds.each { build ->
-                                echo "Aborting build #${build.number} with version ${pom.version}"
-                                build.doStop() // Abort the build
+                            if (userInput) {
+                                // Cancel pending builds based on their build numbers
+                                pendingBuildNumbers.each { buildNumber ->
+                                    def buildToCancel = job.builds.find { it.number == buildNumber }
+                                    if (buildToCancel) {
+                                        echo "Aborting build #${buildNumber} with version ${pom.version}"
+                                        buildToCancel.doStop() // Abort the build
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-
 
             stage('Staging Check') {
                 when {
