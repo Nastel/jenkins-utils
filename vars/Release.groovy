@@ -186,21 +186,22 @@ def generateCodeArtifactToken() {
 // Check if a specific package version exists in the specified repository
 def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text 2>&1"
-        def output = sh(script: command, returnStdout: true).trim()
+        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
+        def result = sh(script: command, returnStdout: true, returnStatus: true).trim()
 
-        if (output.contains("version: '${packageVersion}'")) {
+        if (result == packageVersion) {
+            // The package version exists
             return true
-        } else if (output.contains("ResourceNotFoundException")) {
+        } else if (result.isEmpty()) {
+            // The command executed successfully, but no package version was found
             println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
             return false
         } else {
-            throw new RuntimeException("An error occurred while checking the package version: ${output}")
+            // An error occurred during command execution
+            throw new RuntimeException("An error occurred while checking the package version: ${result}")
         }
     }
 }
-
-
 
 // Delete a specific package version from a repository
 def deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
