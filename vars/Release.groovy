@@ -67,25 +67,7 @@ def call() {
                 steps {
                     script {
                         def jobName = env.JOB_NAME
-                        def pendingBuildNumbers = [] // Store build numbers
-
-                        // Access all builds of the current job
-                        def job = Jenkins.instance.getItemByFullName(jobName)
-
-                        // Check for pending builds and store their numbers
-                        if (job && job.builds) {
-                            job.builds.each { build ->
-                                if (build.number != currentBuild.number && build.isBuilding()) {
-                                    def buildDisplayName = build.displayName
-                                    def match = buildDisplayName =~ /^(\d+\.\d+\.\d+) #(\d+)/
-                                    if (match && match[0][1] == pom.version) {
-                                        pendingBuildNumbers.add(match[0][2].toInteger()) // Store the build number
-                                    }
-                                }
-                            }
-                        } else {
-                            echo "Unable to access job builds for ${jobName}"
-                        }
+                        def pendingBuildNumbers = extractPendingBuildNumbers(jobName, currentBuild, pom.version)
 
                         // If there are pending builds, ask for user input
                         if (!pendingBuildNumbers.isEmpty()) {
@@ -94,20 +76,15 @@ def call() {
                             )
 
                             if (userInput) {
-                                // Cancel pending builds based on their build numbers
+                                // Cancel each pending build
                                 pendingBuildNumbers.each { buildNumber ->
-                                    def buildToCancel = Jenkins.instance.getItemByFullName(jobName).getBuildByNumber(buildNumber)
-                                    if (buildToCancel) {
-                                        echo "Aborting build #${buildNumber} with version ${pom.version}"
-                                        buildToCancel.doStop() // Abort the build
-                                    }
+                                    cancelJobByBuildNumber(jobName, buildNumber)
                                 }
                             }
                         }
                     }
                 }
             }
-
 
             stage('Staging Check') {
                 when {
@@ -217,5 +194,39 @@ def hasPackage(String repository, String packageGroup, String packageName, Strin
 def deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
         sh(script: "aws codeartifact delete-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}")
+    }
+}
+
+// Utility function to extract pending build numbers
+def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
+    def pendingBuildNumbers = []
+
+    // Access all builds of the current job
+    def job = Jenkins.instance.getItemByFullName(jobName)
+
+    // Check for pending builds and store their numbers
+    if (job && job.builds) {
+        job.builds.each { build ->
+            if (build.number != currentBuild.number && build.isBuilding()) {
+                def buildDisplayName = build.displayName
+                def match = buildDisplayName =~ /^(\d+\.\d+\.\d+) #(\d+)/
+                if (match && match[0][1] == pomVersion) {
+                    pendingBuildNumbers.add(match[0][2].toInteger()) // Store the build number
+                }
+            }
+        }
+    } else {
+        echo "Unable to access job builds for ${jobName}"
+    }
+
+    return pendingBuildNumbers
+}
+
+// Utility function to cancel a job by build number
+def cancelJobByBuildNumber(jobName, buildNumber) {
+    def buildToCancel = Jenkins.instance.getItemByFullName(jobName).getBuildByNumber(buildNumber)
+    if (buildToCancel) {
+        echo "Aborting build #${buildNumber} with version ${pom.version}"
+        buildToCancel.doStop() // Abort the build
     }
 }
