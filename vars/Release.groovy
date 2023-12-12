@@ -186,18 +186,20 @@ def generateCodeArtifactToken() {
 // Check if a specific package version exists in the specified repository
 def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --format maven --output json"
-        def output = sh(script: command, returnStdout: true).trim()
-        def jsonOutput = readJSON text: output
+        // First, check if the package exists
+        def checkPackageCommand = "aws codeartifact list-packages --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format json"
+        def packageOutput = sh(script: checkPackageCommand, returnStdout: true).trim()
+        def packageJson = readJSON text: packageOutput
 
-        if (jsonOutput.versions.any { it.version == packageVersion }) {
-            // Package version exists
-            return true
-        } else {
-            // Package version does not exist
-            println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
+        if (!packageJson.packages.any { it.namespace == packageGroup && it.package == packageName }) {
+            println("Package '${packageName}' in namespace '${packageGroup}' does not exist in repository '${repository}'.")
             return false
         }
+
+        // Now, check for the specific version
+        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
+        def output = sh(script: command, returnStdout: true).trim()
+        return output && output == packageVersion
     }
 }
 
