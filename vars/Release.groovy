@@ -186,24 +186,20 @@ def generateCodeArtifactToken() {
 // Check if a specific package version exists in the specified repository
 def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-        def stdout = new ByteArrayOutputStream()
-        def stderr = new ByteArrayOutputStream()
-
-        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
-        sh(script: command, returnStdout: true, returnStatus: true, stdout: stdout, stderr: stderr)
-        def output = stdout.toString().trim()
-        def errorOutput = stderr.toString().trim()
+        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text 2>&1"
+        def output = sh(script: command, returnStdout: true).trim()
 
         if (output && output == packageVersion) {
             return true
-        } else if (errorOutput.contains("ResourceNotFoundException")) {
+        } else if (output.contains("ResourceNotFoundException")) {
             println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
             return false
         } else {
-            throw new RuntimeException("An error occurred while checking the package version: ${errorOutput}")
+            throw new RuntimeException("An error occurred while checking the package version: ${output}")
         }
     }
 }
+
 
 // Delete a specific package version from a repository
 def deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
