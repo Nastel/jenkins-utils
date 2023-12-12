@@ -44,7 +44,7 @@ def call() {
                     }
                     script {
                         // Step 2: Update display name
-                        currentBuild.displayName = "${pom.artifactId}-${pom.version} #${env.BUILD_NUMBER}"
+                        currentBuild.displayName = "${pom.version} #${env.BUILD_NUMBER}"
                     }
                     script {
                         // Step 3: Generate CodeArtifact Token
@@ -66,9 +66,6 @@ def call() {
             stage('Cancel Pending Builds') {
                 steps {
                     script {
-                        // Read the current version from POM
-                        def currentVersion = pom.version
-
                         // Get the current job's name
                         def jobName = env.JOB_NAME
 
@@ -80,14 +77,17 @@ def call() {
                             job.builds.each { build ->
                                 // Exclude the current build from the check
                                 if (build.number != currentBuild.number) {
-                                    // Safely access build details
-                                    def buildEnv = build.getEnvironment(listener)
-                                    def buildVersion = buildEnv['POM_VERSION']
+                                    // Extract version from build's display name
+                                    def buildDisplayName = build.displayName
+                                    def match = buildDisplayName =~ /^(\d+\.\d+\.\d+) #\d+/
+                                    if (match) {
+                                        def buildVersion = match[0][1]
 
-                                    // Check if the build version matches and if it's still running
-                                    if (buildVersion == currentVersion && (build.isBuilding() || build.isInQueue())) {
-                                        echo "Aborting build #${build.number} with version ${buildVersion}"
-                                        build.doStop() // Abort the build
+                                        // Check if the build version matches and if it's still running
+                                        if (buildVersion == currentVersion && (build.isBuilding() || build.isInQueue())) {
+                                            echo "Aborting build #${build.number} with version ${buildVersion}"
+                                            build.doStop() // Abort the build
+                                        }
                                     }
                                 }
                             }
@@ -97,7 +97,6 @@ def call() {
                     }
                 }
             }
-
 
             stage('Staging Check') {
                 when {
