@@ -107,6 +107,18 @@ def call() {
                 }
             }
 
+            stage('Fingerprint Artifacts') {
+                steps {
+                    script {
+                        // Fingerprint BOM files and JARs
+                        def artifacts = findFiles(glob: '**/target/**/*.jar')
+                        artifacts.each {
+                            fingerprint it.path
+                        }
+                    }
+                }
+            }
+
             stage('Prepare Staging') {
                 steps {
                     script {
