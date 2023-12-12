@@ -204,7 +204,11 @@ def hasPackage(String repository, String packageGroup, String packageName, Strin
 // Delete a specific package version from a repository
 def deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-        sh(script: "aws codeartifact delete-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}")
+        def command = "aws codeartifact delete-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}"
+        def status = sh(script: command, returnStatus: true)
+        if (status != 0) {
+            echo "Package ${packageName} version ${packageVersion} not found or could not be deleted. Continuing..."
+        }
     }
 }
 
