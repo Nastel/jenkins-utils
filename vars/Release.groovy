@@ -43,8 +43,8 @@ def call() {
                         env.POM_VERSION = pom.version
                     }
                     script {
-                        // Step 2: Update display name
-                        currentBuild.displayName = "${pom.version} #${env.BUILD_NUMBER}"
+                        // Step 2: Update description
+                        currentBuild.description = "${pom.version}"
                     }
                     script {
                         // Step 3: Generate CodeArtifact Token
@@ -155,7 +155,6 @@ def call() {
             success {
                 // Actions on successful pipeline execution
                 println 'Build succeeded.'
-                promoteBuild(promotionName: 'Golden Star', build: currentBuild, prerequisites: 'SUCCESS', criteria: 'MANUAL')
             }
             failure {
                 // Actions on pipeline failure
@@ -230,8 +229,8 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
     if (job && job.builds) {
         job.builds.each { build ->
             if (build.number != currentBuild.number && build.isBuilding()) {
-                def buildDisplayName = build.displayName
-                def match = buildDisplayName =~ /^(\d+\.\d+\.\d+) #(\d+)/
+                def description = build.description
+                def match = description =~ /^(\d+\.\d+\.\d+)/
                 if (match && match[0][1] == pomVersion) {
                     pendingBuildNumbers.add(match[0][2].toInteger()) // Store the build number
                 }
