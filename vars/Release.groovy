@@ -81,8 +81,8 @@ def call() {
                                 // Exclude the current build from the check
                                 if (build.number != currentBuild.number) {
                                     // Safely access build details
-                                    def buildVars = build.getBuildVariables()
-                                    def buildVersion = buildVars.get('POM_VERSION')
+                                    def buildEnv = build.getEnvironment(listener)
+                                    def buildVersion = buildEnv['POM_VERSION']
 
                                     // Check if the build version matches and if it's still running
                                     if (buildVersion == currentVersion && (build.isBuilding() || build.isInQueue())) {
@@ -95,9 +95,9 @@ def call() {
                             echo "Unable to access job builds for ${jobName}"
                         }
                     }
-
                 }
             }
+
 
             stage('Staging Check') {
                 when {
