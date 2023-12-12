@@ -102,7 +102,7 @@ def call() {
                 steps {
                     script {
                         // Step 1: Execute the Maven build
-                        runMvn("clean package")
+                        runMvn("clean package --update-snapshots")
                     }
                 }
             }
