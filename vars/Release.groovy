@@ -186,19 +186,21 @@ def generateCodeArtifactToken() {
 // Check if a specific package version exists in the specified repository
 def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-        try {
-            def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
-            def output = sh(script: command, returnStdout: true).trim()
-            return output && output == packageVersion
-        } catch (Exception e) {
-            // Check if the exception is due to the package not being found
-            if (e.message.contains("ResourceNotFoundException")) {
-                println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
-                return false
-            } else {
-                // Rethrow other exceptions
-                throw e
-            }
+        def stdout = new ByteArrayOutputStream()
+        def stderr = new ByteArrayOutputStream()
+
+        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text"
+        sh(script: command, returnStdout: true, returnStatus: true, stdout: stdout, stderr: stderr)
+        def output = stdout.toString().trim()
+        def errorOutput = stderr.toString().trim()
+
+        if (output && output == packageVersion) {
+            return true
+        } else if (errorOutput.contains("ResourceNotFoundException")) {
+            println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
+            return false
+        } else {
+            throw new RuntimeException("An error occurred while checking the package version: ${errorOutput}")
         }
     }
 }
