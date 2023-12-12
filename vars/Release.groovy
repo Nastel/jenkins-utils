@@ -113,6 +113,7 @@ def call() {
                         // Fingerprint BOM files and JARs
                         def artifacts = findFiles(glob: '**/target/**/*.jar')
                         artifacts.each {
+                            println "${it.path}"
                             fingerprint it.path
                         }
                     }

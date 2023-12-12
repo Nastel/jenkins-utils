@@ -23,6 +23,7 @@
                     <url>https://meshiq-592078199039.d.codeartifact.us-east-1.amazonaws.com/maven/staging/</url>
                     <releases>
                         <enabled>true</enabled>
+                        <updatePolicy>always</updatePolicy>
                     </releases>
                     <snapshots>
                         <enabled>false</enabled>
