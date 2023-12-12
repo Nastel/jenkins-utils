@@ -73,7 +73,10 @@ def call() {
                         if (!isPackageInStagingRepo && pom.modules) {
                             pom.modules.each { module ->
                                 def submodulePom = readMavenPom file: "${module}/pom.xml"
-                                if (hasPackage(env.STAGING_REPO, submodulePom.groupId, submodulePom.artifactId, submodulePom.version)) {
+                                def groupId = submodulePom.groupId ?: pom.groupId
+                                def artifactId = submodulePom.artifactId
+                                def version = submodulePom.version ?: pom.version
+                                if (hasPackage(env.STAGING_REPO, groupId, artifactId, version)) {
                                     isPackageInStagingRepo = true
                                     return // Short-circuit the loop
                                 }
@@ -114,7 +117,10 @@ def call() {
                             if (pom.modules) {
                                 pom.modules.each { module ->
                                     def submodulePom = readMavenPom file: "${module}/pom.xml"
-                                    deletePackage(env.STAGING_REPO, submodulePom.groupId, submodulePom.artifactId, submodulePom.version)
+                                    def groupId = submodulePom.groupId ?: pom.groupId
+                                    def artifactId = submodulePom.artifactId
+                                    def version = submodulePom.version ?: pom.version
+                                    deletePackage(env.STAGING_REPO, groupId, artifactId, version)
                                 }
                             }
                         }
