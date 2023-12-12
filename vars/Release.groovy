@@ -187,7 +187,7 @@ def generateCodeArtifactToken() {
 def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
         // First, check if the package exists
-        def checkPackageCommand = "aws codeartifact list-packages --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format json"
+        def checkPackageCommand = "aws codeartifact list-packages --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository}"
         def packageOutput = sh(script: checkPackageCommand, returnStdout: true).trim()
         def packageJson = readJSON text: packageOutput
 
