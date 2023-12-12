@@ -22,7 +22,7 @@ def call() {
             AWS_DEFAULT_REGION = 'us-east-1'
 
             // Jenkins AWS Credentials ID
-            AWS_CREDENTIALS_ID = 'codearetifact-user'
+            AWS_CREDENTIALS_ID = 'temp-ca-user'
 
             // Jenkins Maven Settings ID
             MVN_SETTINGS_FILE_ID = 'codeartifact-maven-settings'
