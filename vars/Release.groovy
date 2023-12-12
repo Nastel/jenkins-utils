@@ -131,16 +131,11 @@ def call() {
             success {
                 // Actions on successful pipeline execution
                 println 'Build succeeded.'
+                promoteBuild(promotionName: 'Golden Star', build: currentBuild, prerequisites: 'SUCCESS', criteria: 'MANUAL')
             }
             failure {
                 // Actions on pipeline failure
                 println 'Build failed.'
-            }
-            manual('Manual Approval') {
-                // This block will be executed when manual approval is required
-                input 'Approve deployment to production?'
-                echo 'Deployment approved!'
-                // Add your deployment steps here
             }
         }
     }
