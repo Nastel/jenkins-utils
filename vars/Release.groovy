@@ -53,35 +53,21 @@ def call() {
                     script {
                         // Step 4: Check for existing release version
                         if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
-                            error("Release version already exists in the repository.")
+                            error("Release version ${pom.version} already exists in the repository.")
                         }
                     }
-                    script {
-                        // Step 5: Check for package in staging repository
-                        isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
-                    }
-                }
-            }
-
-            stage('Check Pending Builds') {
-                steps {
                     script {
                         def jobName = env.JOB_NAME
                         def pendingBuildNumbers = extractPendingBuildNumbers(jobName, currentBuild, pom.version)
 
                         // If there are pending builds, ask for user input
                         if (!pendingBuildNumbers.isEmpty()) {
-                            def userInput = input(
-                                    id: 'userInput', message: 'Pending builds found. Cancel them?', ok: 'Yes'
-                            )
-
-                            if (userInput) {
-                                // Cancel each pending build
-                                pendingBuildNumbers.each { buildNumber ->
-                                    cancelJobByBuildNumber(jobName, buildNumber)
-                                }
-                            }
+                            error("Pending build exists.")
                         }
+                    }
+                    script {
+                        // Step 6: Check for package in staging repository
+                        isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
                     }
                 }
             }
@@ -227,13 +213,4 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
     }
 
     return pendingBuildNumbers
-}
-
-// Utility function to cancel a job by build number
-def cancelJobByBuildNumber(jobName, buildNumber) {
-    def buildToCancel = Jenkins.instance.getItemByFullName(jobName).getBuildByNumber(buildNumber)
-    if (buildToCancel) {
-        echo "Aborting build #${buildNumber} with version ${pom.version}"
-        buildToCancel.doStop() // Abort the build
-    }
 }
