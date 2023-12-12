@@ -136,6 +136,12 @@ def call() {
                 // Actions on pipeline failure
                 println 'Build failed.'
             }
+            manual('Manual Approval') {
+                // This block will be executed when manual approval is required
+                input 'Approve deployment to production?'
+                echo 'Deployment approved!'
+                // Add your deployment steps here
+            }
         }
     }
 }
