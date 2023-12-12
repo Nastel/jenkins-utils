@@ -68,6 +68,17 @@ def call() {
                     script {
                         // Step 6: Check for package in staging repository
                         isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
+
+                        // Check for submodules in staging repository
+                        if (!isPackageInStagingRepo && pom.modules) {
+                            pom.modules.each { module ->
+                                def submodulePom = readMavenPom file: "${module}/pom.xml"
+                                if (hasPackage(env.STAGING_REPO, submodulePom.groupId, submodulePom.artifactId, submodulePom.version)) {
+                                    isPackageInStagingRepo = true
+                                    return // Short-circuit the loop
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -99,6 +110,13 @@ def call() {
                         // Step 1: Delete existing package in staging if necessary
                         if (isPackageInStagingRepo) {
                             deletePackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
+
+                            if (pom.modules) {
+                                pom.modules.each { module ->
+                                    def submodulePom = readMavenPom file: "${module}/pom.xml"
+                                    deletePackage(env.STAGING_REPO, submodulePom.groupId, submodulePom.artifactId, submodulePom.version)
+                                }
+                            }
                         }
                     }
                     script {
