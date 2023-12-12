@@ -186,28 +186,20 @@ def generateCodeArtifactToken() {
 // Check if a specific package version exists in the specified repository
 def hasPackage(String repository, String packageGroup, String packageName, String packageVersion) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
-        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --query \"versions[?version=='${packageVersion}'].version\" --format maven --output text 2>&1"
+        def command = "aws codeartifact list-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --namespace ${packageGroup} --package ${packageName} --format maven --output json"
         def output = sh(script: command, returnStdout: true).trim()
-        def exitCode = sh(script: 'echo $?', returnStdout: true).trim().toInteger()
+        def jsonOutput = readJSON text: output
 
-        if (exitCode == 0 && output.contains(packageVersion)) {
-            // Command was successful and package version exists
+        if (jsonOutput.versions.any { it.version == packageVersion }) {
+            // Package version exists
             return true
-        } else if (exitCode != 0) {
-            // The command failed, handle based on the output
-            if (output.contains("ResourceNotFoundException")) {
-                println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
-                return false
-            } else {
-                throw new RuntimeException("An error occurred while checking the package version: ${output}")
-            }
         } else {
-            // Command was successful but package version does not exist
+            // Package version does not exist
+            println("Package '${packageName}' with version '${packageVersion}' does not exist in repository '${repository}'.")
             return false
         }
     }
 }
-
 
 // Delete a specific package version from a repository
 def deletePackage(String repository, String packageGroup, String packageName, String packageVersion) {
