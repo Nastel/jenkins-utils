@@ -96,7 +96,7 @@ def call() {
                             if (userInput) {
                                 // Cancel pending builds based on their build numbers
                                 pendingBuildNumbers.each { buildNumber ->
-                                    def buildToCancel = job.builds.find { it.number == buildNumber }
+                                    def buildToCancel = Jenkins.instance.getItemByFullName(jobName).getBuildByNumber(buildNumber)
                                     if (buildToCancel) {
                                         echo "Aborting build #${buildNumber} with version ${pom.version}"
                                         buildToCancel.doStop() // Abort the build
@@ -107,6 +107,7 @@ def call() {
                     }
                 }
             }
+
 
             stage('Staging Check') {
                 when {
