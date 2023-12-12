@@ -111,12 +111,11 @@ def call() {
                 steps {
                     script {
                         // Generate the list of dependencies
-                        sh "mvn dependency:list -DincludeGroupIds=com.nastel -DoutputFile=deps.txt"
+                        sh "mvn dependency:list -DoutputFile=deps.txt"
 
                         // Dump the contents of deps.txt to the log
                         echo 'Dependencies List:'
                         echo readFile('deps.txt')
-
 
                         // Fingerprint BOM files and JARs
                         def artifacts = findFiles(glob: '**/target/**/*.jar')
