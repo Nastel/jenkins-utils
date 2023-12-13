@@ -304,6 +304,7 @@ def listMavenDependencies(String pomPath) {
     def command = "--file ${pomPath} dependency:tree -DoutputFile=${file}"
     runMvn(command)
     def dependencies = readFile(file).readLines()
+    dependencies.each { println "${it}" }
     def filteredDependencies = dependencies.findAll { it =~ /^   [^|\\-]/ }
 
     // Optional: Clean up temp file
