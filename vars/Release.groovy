@@ -13,6 +13,7 @@ def call() {
 
         environment {
             MVN_HOME = tool 'M3'
+            MAVEN_LOCAL_REPO = "${env.HOME}/.m2/repository"
             JAVA_HOME = tool 'JDK11'
             CODEARTIFACT_AUTH_TOKEN = ''
 
@@ -329,27 +330,60 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
 //    return dependencies;
 //}
 
+//def fingerprintDependencies(Model pom, String filterGroupId) {
+//    def file = 'target/tempDependencyTree.txt'
+//    runMvn("dependency:tree -DoutputFile=${file} -DoutputType='tgf'")
+//
+//    def processDependencies = { Model pomModel, String basePath ->
+//        def version = pomModel.version ?: pomModel.parent.version
+//        println "A: ${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
+//        fingerprint "${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
+//        def dependenciesPath = basePath ? "${basePath}/${file}" : file
+//        readFile(dependenciesPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
+//            def parts = line.split(':')
+//            println "D: ${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
+//            fingerprint "${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
+//        }
+//    }
+//
+//    if (pom.modules) {
+//        pom.modules.each { module ->
+//            processDependencies(readMavenPom(file: "${module}/pom.xml"), module)
+//        }
+//    } else {
+//        processDependencies(pom, '')
+//    }
+//}
+
 def fingerprintDependencies(Model pom, String filterGroupId) {
     def file = 'target/tempDependencyTree.txt'
     runMvn("dependency:tree -DoutputFile=${file} -DoutputType='tgf'")
 
+    def localRepoBasePath = "${env.MAVEN_LOCAL_REPO}"
+
+    def parseDependency = { String dependency ->
+        def parts = dependency.split(':')
+        return [parts[0].trim(), parts[1].trim(), parts[3].trim()] // groupId, artifactId, version
+    }
+
     def processDependencies = { Model pomModel, String basePath ->
-        def version = pomModel.version ?: pomModel.parent.version
-        println "A: ${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
-        fingerprint "${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
         def dependenciesPath = basePath ? "${basePath}/${file}" : file
         readFile(dependenciesPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
-            def parts = line.split(':')
-            println "D: ${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
-            fingerprint "${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
+            def (groupId, artifactId, version) = parseDependency(line)
+            def groupPath = groupId.replace('.', '/')
+            def artifactPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
+            fingerprint artifactPath
+            println "FP: ${artifactPath}"
         }
     }
 
     if (pom.modules) {
         pom.modules.each { module ->
-            processDependencies(readMavenPom(file: "${module}/pom.xml"), module)
+            def submodulePom = readMavenPom(file: "${module}/pom.xml")
+            processDependencies(submodulePom, module)
         }
     } else {
         processDependencies(pom, '')
     }
 }
+
