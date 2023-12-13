@@ -13,7 +13,7 @@ def call() {
 
         environment {
             MVN_HOME = tool 'M3'
-            MAVEN_LOCAL_REPO = "${env.JENKINS_HOME}/.m2/repository"
+            MAVEN_LOCAL_REPO = "~/.m2/repository"
             JAVA_HOME = tool 'JDK11'
             CODEARTIFACT_AUTH_TOKEN = ''
 
