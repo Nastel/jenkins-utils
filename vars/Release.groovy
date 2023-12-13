@@ -72,10 +72,9 @@ def call() {
                         // Check for submodules in staging repository
                         if (!isPackageInStagingRepo && pom.modules) {
                             pom.modules.each { module ->
-                                def submodulePom = readMavenPom file: "${module}/pom.xml"
-                                def groupId = submodulePom.groupId ?: pom.groupId
-                                def artifactId = submodulePom.artifactId
-                                def version = submodulePom.version ?: pom.version
+                                def groupId = module.groupId ?: pom.groupId
+                                def artifactId = module.artifactId
+                                def version = module.version ?: pom.version
                                 if (hasPackage(env.STAGING_REPO, groupId, artifactId, version)) {
                                     isPackageInStagingRepo = true
                                     return // Short-circuit the loop
@@ -158,10 +157,9 @@ def call() {
 
                             if (pom.modules) {
                                 pom.modules.each { module ->
-                                    def submodulePom = readMavenPom file: "${module}/pom.xml"
-                                    def groupId = submodulePom.groupId ?: pom.groupId
-                                    def artifactId = submodulePom.artifactId
-                                    def version = submodulePom.version ?: pom.version
+                                    def groupId = module.groupId ?: pom.groupId
+                                    def artifactId = module.artifactId
+                                    def version = module.version ?: pom.version
                                     deletePackage(env.STAGING_REPO, groupId, artifactId, version)
                                 }
                             }
@@ -329,7 +327,7 @@ def readDependencies(String path) {
     return dependencies;
 }
 
-def fingerprintDependencies(Model pom, String groupId) {
+def fingerprintDependencies(Model pom, String filterGroupId) {
     def file = 'target/tempDependencyTree.txt'
 
     def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
@@ -337,16 +335,16 @@ def fingerprintDependencies(Model pom, String groupId) {
 
     if (pom.modules) {
         pom.modules.each { module ->
-            def submodulePom = readMavenPom file: "${module}/${file}"
-            def submoduleArtifactId = submodulePom.artifactId ?: pom.artifactId
-            def submoduleVersion = submodulePom.version ?: pom.version
+            //def groupId = module.groupId ?: pom.groupId
+            def artifactId = module.artifactId
+            def version = module.version ?: pom.version
 
-            def artifactPath = "target/${submoduleArtifactId}-${submoduleVersion}.jar"
+            def artifactPath = "target/${artifactId}-${version}.jar"
             fingerprint artifactPath
             println "FP: ${artifactPath}"
 
             def dependenciesPath = "$module/${file}"
-            def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(groupId) }
+            def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(filterGroupId) }
             dependencies.each { line ->
                 def parts = line.split(':')
                 def depArtifactId = parts[1].trim()
@@ -362,7 +360,7 @@ def fingerprintDependencies(Model pom, String groupId) {
         println "FP: ${artifactPath}"
 
         def dependenciesPath = "${file}"
-        def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(groupId) }
+        def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(filterGroupId) }
         dependencies.each { line ->
             def parts = line.split(':')
             def depArtifactId = parts[1].trim()
