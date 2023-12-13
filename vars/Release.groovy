@@ -130,6 +130,7 @@ def call() {
             stage('Fingerprint Artifacts') {
                 steps {
                     script {
+                        fingerprintDependencies(pom, 'com.nastel')
                         def dependencies = listMavenDependencies(pom, 'com.nastel')
                         dependencies.each { println "${it}" }
 
