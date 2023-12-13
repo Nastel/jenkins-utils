@@ -299,23 +299,40 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
     return pendingBuildNumbers
 }
 
-def listMavenDependencies(String pomPath) {
+def listMavenDependencies(Model pom, String groupId) {
     def file = 'target/tempDependencyTree.txt'
-    def command = "--file ${pomPath} dependency:tree -DoutputFile=${file}"
-    runMvn(command)
-    def dependencies = readFile(file).readLines()
-    dependencies.each { println "${it}" }
-    def filteredDependencies = dependencies.findAll { it =~ /^   [^|\\-]/ }
 
-    // Optional: Clean up temp file
-    sh "rm -f ${file}"
+    def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
+    runMvn(command)
+
+    def dependencies = readDependencies(file)
+
+    if (pom.modules) {
+        pom.modules.each { module ->
+            def submodulePomPath = "${module}/${file}"
+            dependencies = readDependencies(submodulePomPath) // For each submodule
+        }
+    }
+
+    return dependencies
+}
+
+def readDependencies(String path) {
+
+    def dependencies = readFile(path).readLines()
+    def filteredDependencies = dependencies //.findAll { it =~ /^   [^|\\-]/ }
+
+    println "from ${path}"
+    filteredDependencies.each { println "${it}" }
 
     return filteredDependencies
 }
 
-def fingerprintDependencies(String pomPath, String groupId) {
-    // Read the specified POM file
-    def pom = readMavenPom file: pomPath
+def fingerprintDependencies(Model pom, String groupId) {
+    def file = 'target/tempDependencyTree.txt'
+
+    def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
+    runMvn(command)
 
     // Fingerprint the JAR file of the project
     def artifactPath = "${pomPath.replace('pom.xml', '')}target/${pom.artifactId}-${pom.version}.jar"
