@@ -1,6 +1,5 @@
 def pom
 def token
-def isPackageInStagingRepo = false
 
 def call() {
     pipeline {
@@ -51,24 +50,29 @@ def call() {
                         // Step 3: Generate CodeArtifact Token
                         token = generateCodeArtifactToken()
                     }
-                    script {
-                        // Step 4: Check for existing release version
-                        if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
-                            error("Release version ${pom.version} already exists in the repository.")
-                        }
-                    }
+                }
+            }
+
+            stage('Validation') {
+                steps {
                     script {
                         def jobName = env.JOB_NAME
                         def pendingBuildNumbers = extractPendingBuildNumbers(jobName, currentBuild, pom.version)
 
                         // If there are pending builds, ask for user input
                         if (!pendingBuildNumbers.isEmpty()) {
-                            error("Pending build exists.")
+                            error("Pending build found, aborting.")
+                        }
+                    }
+                    script {
+                        // Step 4: Check for existing release version
+                        if (hasPackage(env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)) {
+                            error("Release version ${pom.version} already exists, aborting.")
                         }
                     }
                     script {
                         // Step 6: Check for package in staging repository
-                        isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
+                        def isPackageInStagingRepo = hasPackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
 
                         // Check for submodules in staging repository
                         if (!isPackageInStagingRepo && pom.modules) {
@@ -83,80 +87,10 @@ def call() {
                                 }
                             }
                         }
-                    }
-                }
-            }
 
-            stage('Staging Check') {
-                when {
-                    expression { isPackageInStagingRepo }
-                }
-                steps {
-                    script {
-                        // Step 1: Confirm rebuild if package exists in staging
-                        println "exists"
-                        //input message: "Package already exists in staging. Proceed with build?", ok: 'Yes'
-                    }
-                }
-            }
+                        if(isPackageInStagingRepo) {
+                            input message: "Package already exists in staging. Delete and rebuild?", ok: 'Yes'
 
-            stage('Build and Test') {
-                steps {
-                    script {
-                        // Step 1: Execute the Maven build
-                        runMvn("clean package --update-snapshots")
-                    }
-                }
-            }
-
-//            stage('Fingerprint Artifacts') {
-//                steps {
-//                    script {
-//                        // Generate the list of dependencies
-//                        sh "mvn dependency:list -DoutputFile=deps.txt"
-//
-//                        // Dump the contents of deps.txt to the log
-//                        echo 'Dependencies List:'
-//                        echo readFile('deps.txt')
-//
-//                        // Fingerprint BOM files and JARs
-//                        def artifacts = findFiles(glob: '**/target/**/*.jar')
-//                        artifacts.each {
-//                            println "${it.path}"
-//                            fingerprint it.path
-//                        }
-//                    }
-//                }
-//            }
-
-            stage('Fingerprint Artifacts') {
-                steps {
-                    script {
-                        fingerprintArtifacts(pom)
-                        fingerprintDependencies(pom, 'com.nastel')
-//                        def dependencies = listMavenDependencies(pom, 'com.nastel')
-//                        dependencies.each { println "${it}" }
-
-                    }
-//                    script {
-//                        def pom = readMavenPom file: 'pom.xml'
-//                        fingerprintDependencies('pom.xml', 'com.nastel') // For main project
-//
-//                        if (pom.modules) {
-//                            pom.modules.each { module ->
-//                                def submodulePomPath = "${module}/pom.xml"
-//                                fingerprintDependencies(submodulePomPath, 'com.nastel') // For each submodule
-//                            }
-//                        }
-//                    }
-                }
-            }
-
-            stage('Prepare Staging') {
-                steps {
-                    script {
-                        // Step 1: Delete existing package in staging if necessary
-                        if (isPackageInStagingRepo) {
                             deletePackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
 
                             if (pom.modules) {
@@ -170,23 +104,38 @@ def call() {
                             }
                         }
                     }
+                }
+            }
+
+            stage('Build & Stage') {
+                steps {
                     script {
-                        // Step 2: Deploy to staging repository
-                        runMvn("deploy -P staging")
+                        // Step 1: Execute the Maven build
+                        runMvn("clean deploy -P jenkins -P staging ")
                     }
                 }
             }
+
+            stage('Fingerprint Artifacts') {
+                steps {
+                    script {
+                        fingerprintArtifacts(pom)
+                        fingerprintDependencies(pom, 'com.nastel')
+                    }
+                }
+            }
+
 
             stage('Quality Assurance') {
                 steps {
                     script {
                         // Step 1: QA approval before release
-                        input message: "Has QA approved the staging artifacts?", ok: 'Yes'
+                        input message: "Has QA approved the release?", ok: 'Yes'
                     }
                 }
             }
 
-            stage('Release Promotion') {
+            stage('Release') {
                 steps {
                     script {
                         // Step 1: Logic to promote from staging to release
@@ -296,55 +245,6 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
     return pendingBuildNumbers
 }
 
-//def listMavenDependencies(Model pom, String groupId) {
-//    def file = 'target/tempDependencyTree.txt'
-//
-//    def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
-//    runMvn(command)
-//
-//    def dependencies = []
-//
-//    if (pom.modules) {
-//        pom.modules.each { module ->
-//            def submodulePomPath = "${module}/${file}"
-//            dependencies.addAll(readDependencies(submodulePomPath))
-//        }
-//    } else {
-//        dependencies = readDependencies(file)
-//    }
-//    dependencies = dependencies.unique().findAll { d -> d.startsWith(groupId) }
-//
-//    dependencies.each { println "${it}" }
-//
-//    return dependencies
-//}
-//
-
-
-//def fingerprintDependencies(Model pom, String filterGroupId) {
-//    def file = 'target/tempDependencyTree.txt'
-//    runMvn("dependency:tree -DoutputFile=${file} -DoutputType='tgf'")
-//
-//    def processDependencies = { Model pomModel, String basePath ->
-//        def version = pomModel.version ?: pomModel.parent.version
-//        println "A: ${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
-//        fingerprint "${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
-//        def dependenciesPath = basePath ? "${basePath}/${file}" : file
-//        readFile(dependenciesPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
-//            def parts = line.split(':')
-//            println "D: ${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
-//            fingerprint "${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
-//        }
-//    }
-//
-//    if (pom.modules) {
-//        pom.modules.each { module ->
-//            processDependencies(readMavenPom(file: "${module}/pom.xml"), module)
-//        }
-//    } else {
-//        processDependencies(pom, '')
-//    }
-//}
 
 def fingerprintArtifacts(Model pom) {
 
@@ -363,6 +263,7 @@ def fingerprintArtifacts(Model pom) {
         processArtifact(pom, '')
     }
 }
+
 
 def fingerprintDependencies(Model pom, String filterGroupId) {
     def file = 'target/dependency-tree.txt'
