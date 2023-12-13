@@ -92,6 +92,7 @@ def call() {
                             input message: "Package already exists in staging. Delete and rebuild?", ok: 'Yes'
 
                             deletePackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
+                            deleteLocal(pom.groupId, pom.artifactId, pom.version)
 
                             if (pom.modules) {
                                 pom.modules.each { module ->
@@ -100,6 +101,7 @@ def call() {
                                     def artifactId = submodulePom.artifactId
                                     def version = submodulePom.version ?: pom.version
                                     deletePackage(env.STAGING_REPO, groupId, artifactId, version)
+                                    deleteLocal(groupId, artifactId, version)
                                 }
                             }
                         }
@@ -109,10 +111,10 @@ def call() {
 
             stage('Build & Deploy') {
                 steps {
-                    script {
-                        sh "find ${env.MAVEN_LOCAL_REPO}/com/meshiq/ -type d ! -name '*-SNAPSHOT*'"
-                        sh "find ${env.MAVEN_LOCAL_REPO}/com/nastel/ -type d ! -name '*-SNAPSHOT*'"
-                    }
+//                    script {
+//                        sh "find ${env.MAVEN_LOCAL_REPO}/com/meshiq/ -type d ! -name '*-SNAPSHOT*'"
+//                        sh "find ${env.MAVEN_LOCAL_REPO}/com/nastel/ -type d ! -name '*-SNAPSHOT*'"
+//                    }
                     script {
 
                         // Step 1: Execute the Maven build
@@ -216,6 +218,18 @@ def deletePackage(String repository, String packageGroup, String packageName, St
             echo "Package ${packageName} version ${packageVersion} not found or could not be deleted. Continuing..."
         }
     }
+}
+
+def deleteLocal(String groupId, String artifactId, String version) {
+    // Replace '.' with '/' in groupId to create the directory path
+    String groupPath = groupId.replace('.', '/')
+
+    // Construct the path to the artifact
+    String artifactPath = "${env.MAVEN_LOCAL_REPO}/${groupPath}/${artifactId}/${version}"
+
+    // Delete the artifact directory
+    println "Deleting ${artifactPath}"
+    new File(artifactPath).deleteDir()
 }
 
 // Function to copy a package version from one repository to another
