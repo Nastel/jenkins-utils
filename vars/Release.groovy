@@ -391,11 +391,11 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
         println "Info: ${infoPath}"
         readFile(infoPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
             def (groupId, artifactId, version) = parseDependency(line)
+            println "parsed: ${groupId} ${artifactId} ${version}"
             def groupPath = groupId.replace('.', '/')
             def dependencyPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
             println "FP: ${dependencyPath}"
             fingerprint dependencyPath
-
         }
     }
 
