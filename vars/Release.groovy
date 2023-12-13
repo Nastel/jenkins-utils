@@ -12,7 +12,7 @@ def call() {
 
         environment {
             MVN_HOME = tool 'M3'
-            MAVEN_LOCAL_REPO = "~/.m2/repository"
+            MAVEN_LOCAL_REPO = "${env.JENKINS_HOME}/.m2/repository"
             JAVA_HOME = tool 'JDK11'
             CODEARTIFACT_AUTH_TOKEN = ''
 
@@ -110,6 +110,11 @@ def call() {
             stage('Build & Deploy') {
                 steps {
                     script {
+                        sh "rm -rf ${env.MAVEN_LOCAL_REPO}/com/meshiq/"
+                        sh "rm -rf ${env.MAVEN_LOCAL_REPO}/com/nastel/"
+                    }
+                    script {
+
                         // Step 1: Execute the Maven build
                         runMvn("clean deploy -P jenkins -P staging ")
                     }
