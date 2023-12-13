@@ -339,20 +339,20 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
             def artifactId = module.artifactId
             def version = module.version ?: pom.version
 
-            def artifactPath = "target/${artifactId}-${version}.jar"
+            def artifactPath = "${module}/target/${artifactId}-${version}.jar"
             fingerprint artifactPath
             println "FP: ${artifactPath}"
 
-            def dependenciesPath = "${module}/${file}"
-            def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(filterGroupId) }
-            dependencies.each { line ->
-                def parts = line.split(':')
-                def depArtifactId = parts[1].trim()
-                def depVersion = parts[3].trim()
-                def depArtifactPath = "${module}/target/lib/${depArtifactId}-${depVersion}.jar"
-                fingerprint depArtifactPath
-                println "FP: ${depArtifactPath}"
-            }
+//            def dependenciesPath = "${module}/${file}"
+//            def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(filterGroupId) }
+//            dependencies.each { line ->
+//                def parts = line.split(':')
+//                def depArtifactId = parts[1].trim()
+//                def depVersion = parts[3].trim()
+//                def depArtifactPath = "${module}/target/lib/${depArtifactId}-${depVersion}.jar"
+//                fingerprint depArtifactPath
+//                println "FP: ${depArtifactPath}"
+//            }
         }
     } else {
         def artifactPath = "target/${pom.artifactId}-${pom.version}.jar"
