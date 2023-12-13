@@ -13,7 +13,7 @@ def call() {
 
         environment {
             MVN_HOME = tool 'M3'
-            MAVEN_LOCAL_REPO = "${env.HOME}/.m2/repository"
+            MAVEN_LOCAL_REPO = "${env.JENKINS_HOME}/.m2/repository"
             JAVA_HOME = tool 'JDK11'
             CODEARTIFACT_AUTH_TOKEN = ''
 
@@ -387,11 +387,8 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
 
     def processDependencies = { Model pomModel, String basePath ->
         def infoPath = basePath ? "${basePath}/${file}" : file
-        println "Info: ${infoPath}"
         readDependencies(infoPath).findAll { it.startsWith(filterGroupId) }.each { line ->
-            println "line: ${line}"
             def (groupId, artifactId, version) = parseDependency(line)
-            println "parsed: ${groupId} ${artifactId} ${version}"
             def groupPath = groupId.replace('.', '/')
             def dependencyPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
             println "FP: ${dependencyPath}"
