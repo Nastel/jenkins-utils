@@ -130,16 +130,28 @@ def call() {
             stage('Fingerprint Artifacts') {
                 steps {
                     script {
-                        def pom = readMavenPom file: 'pom.xml'
-                        fingerprintDependencies('pom.xml', 'com.nastel') // For main project
+                        def dependencies = listMavenDependencies('pom.xml')
+                        dependencies.each { echo it }
 
                         if (pom.modules) {
                             pom.modules.each { module ->
                                 def submodulePomPath = "${module}/pom.xml"
-                                fingerprintDependencies(submodulePomPath, 'com.nastel') // For each submodule
+                                dependencies = listMavenDependencies(submodulePomPath) // For each submodule
+                                dependencies.each { echo it }
                             }
                         }
                     }
+//                    script {
+//                        def pom = readMavenPom file: 'pom.xml'
+//                        fingerprintDependencies('pom.xml', 'com.nastel') // For main project
+//
+//                        if (pom.modules) {
+//                            pom.modules.each { module ->
+//                                def submodulePomPath = "${module}/pom.xml"
+//                                fingerprintDependencies(submodulePomPath, 'com.nastel') // For each submodule
+//                            }
+//                        }
+//                    }
                 }
             }
 
@@ -205,6 +217,14 @@ def runMvn(String command) {
     configFileProvider([configFile(fileId: env.MVN_SETTINGS_FILE_ID, variable: 'SETTINGS_XML')]) {
         withEnv(["CODEARTIFACT_AUTH_TOKEN=${token}"]) {
             sh "${env.MVN_HOME}/bin/mvn -s ${SETTINGS_XML} ${command}"
+        }
+    }
+}
+
+def executeMvn(String command) {
+    configFileProvider([configFile(fileId: env.MVN_SETTINGS_FILE_ID, variable: 'SETTINGS_XML')]) {
+        withEnv(["CODEARTIFACT_AUTH_TOKEN=${token}"]) {
+            return sh(script: "${env.MVN_HOME}/bin/mvn -s ${SETTINGS_XML} ${command}", returnStdout: true).trim()
         }
     }
 }
@@ -277,6 +297,13 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
     }
 
     return pendingBuildNumbers
+}
+
+def listMavenDependencies(String pomPath) {
+    def command = "--file ${pomPath} dependency:list -DoutputType=text"
+    def mvnOutput = executeMvn(command)
+    def dependencies = mvnOutput.readLines().findAll { it =~ /^   [^|\\-]/ }
+    return dependencies
 }
 
 def fingerprintDependencies(String pomPath, String groupId) {
