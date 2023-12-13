@@ -130,16 +130,9 @@ def call() {
             stage('Fingerprint Artifacts') {
                 steps {
                     script {
-                        def dependencies = listMavenDependencies('pom.xml')
+                        def dependencies = listMavenDependencies(pom, 'com.nastel')
                         dependencies.each { println "${it}" }
 
-                        if (pom.modules) {
-                            pom.modules.each { module ->
-                                def submodulePomPath = "${module}/pom.xml"
-                                dependencies = listMavenDependencies(submodulePomPath) // For each submodule
-                                dependencies.each { println "${it}" }
-                            }
-                        }
                     }
 //                    script {
 //                        def pom = readMavenPom file: 'pom.xml'
