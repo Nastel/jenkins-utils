@@ -131,13 +131,13 @@ def call() {
                 steps {
                     script {
                         def dependencies = listMavenDependencies('pom.xml')
-                        dependencies.each { echo it }
+                        dependencies.each { println "${it}" }
 
                         if (pom.modules) {
                             pom.modules.each { module ->
                                 def submodulePomPath = "${module}/pom.xml"
                                 dependencies = listMavenDependencies(submodulePomPath) // For each submodule
-                                dependencies.each { echo it }
+                                dependencies.each { println "${it}" }
                             }
                         }
                     }
@@ -307,7 +307,7 @@ def listMavenDependencies(String pomPath) {
     def filteredDependencies = dependencies.findAll { it =~ /^   [^|\\-]/ }
 
     // Optional: Clean up temp file
-    sh 'rm -f ${file}'
+    sh "rm -f ${file}"
 
     return filteredDependencies
 }
