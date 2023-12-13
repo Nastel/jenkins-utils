@@ -298,27 +298,34 @@ def listMavenDependencies(Model pom, String groupId) {
     def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
     runMvn(command)
 
-    def dependencies = readDependencies(file)
+    def dependencies = []
 
     if (pom.modules) {
         pom.modules.each { module ->
             def submodulePomPath = "${module}/${file}"
-            dependencies = readDependencies(submodulePomPath) // For each submodule
+            dependencies.addAll(readDependencies(submodulePomPath))
         }
+    } else {
+        dependencies = readDependencies(file)
     }
+    dependencies.unique(true)
+
+    dependencies.each { println "${it}" }
 
     return dependencies
 }
 
 def readDependencies(String path) {
+    def content = readFile(path).readLines()
 
-    def dependencies = readFile(path).readLines()
-    def filteredDependencies = dependencies //.findAll { it =~ /^   [^|\\-]/ }
+    def dependencies = []
 
-    println "from ${path}"
-    filteredDependencies.each { println "${it}" }
+    for (int i = 1; i < content.size(); i++) { // Start from index 1 to skip the first line - jar itself
+        if (content[i].startsWith('#')) break // Stop processing when '#' is encountered
+        dependencies.add(content[i].split(' ')[1]) // Extract dependency
+    }
 
-    return filteredDependencies
+    return dependencies;
 }
 
 def fingerprintDependencies(Model pom, String groupId) {
