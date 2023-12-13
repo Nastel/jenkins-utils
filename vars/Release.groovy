@@ -308,7 +308,7 @@ def listMavenDependencies(Model pom, String groupId) {
     } else {
         dependencies = readDependencies(file)
     }
-    dependencies = dependencies.unique().find { d -> d.startsWith(groupId) }
+    dependencies = dependencies.unique().findAll { d -> d.startsWith(groupId) }
 
     dependencies.each { println "${it}" }
 
