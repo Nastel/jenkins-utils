@@ -343,7 +343,7 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
             fingerprint artifactPath
             println "FP: ${artifactPath}"
 
-            def dependenciesPath = "$module/${file}"
+            def dependenciesPath = "${module}/${file}"
             def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(filterGroupId) }
             dependencies.each { line ->
                 def parts = line.split(':')
