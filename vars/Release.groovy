@@ -94,6 +94,7 @@ def call() {
                 steps {
                     script {
                         // Step 1: Confirm rebuild if package exists in staging
+                        println "exists"
                         //input message: "Package already exists in staging. Proceed with build?", ok: 'Yes'
                     }
                 }
