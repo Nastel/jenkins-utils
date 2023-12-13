@@ -118,7 +118,7 @@ def call() {
                     script {
 
                         // Step 1: Execute the Maven build
-                        runMvn("clean deploy -P jenkins -P staging ")
+                        runMvn("clean deploy -P jenkins -P staging -Djenkins.build.number=${currentBuild.number}")
                     }
                 }
             }
