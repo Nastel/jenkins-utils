@@ -293,85 +293,62 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
     return pendingBuildNumbers
 }
 
-def listMavenDependencies(Model pom, String groupId) {
-    def file = 'target/tempDependencyTree.txt'
-
-    def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
-    runMvn(command)
-
-    def dependencies = []
-
-    if (pom.modules) {
-        pom.modules.each { module ->
-            def submodulePomPath = "${module}/${file}"
-            dependencies.addAll(readDependencies(submodulePomPath))
-        }
-    } else {
-        dependencies = readDependencies(file)
-    }
-    dependencies = dependencies.unique().findAll { d -> d.startsWith(groupId) }
-
-    dependencies.each { println "${it}" }
-
-    return dependencies
-}
-
-def readDependencies(String path) {
-    def content = readFile(path).readLines()
-
-    def dependencies = []
-
-    for (int i = 1; i < content.size(); i++) { // Start from index 1 to skip the first line - jar itself
-        if (content[i].startsWith('#')) break // Stop processing when '#' is encountered
-        dependencies.add(content[i].split(' ')[1]) // Extract dependency
-    }
-
-    return dependencies;
-}
+//def listMavenDependencies(Model pom, String groupId) {
+//    def file = 'target/tempDependencyTree.txt'
+//
+//    def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
+//    runMvn(command)
+//
+//    def dependencies = []
+//
+//    if (pom.modules) {
+//        pom.modules.each { module ->
+//            def submodulePomPath = "${module}/${file}"
+//            dependencies.addAll(readDependencies(submodulePomPath))
+//        }
+//    } else {
+//        dependencies = readDependencies(file)
+//    }
+//    dependencies = dependencies.unique().findAll { d -> d.startsWith(groupId) }
+//
+//    dependencies.each { println "${it}" }
+//
+//    return dependencies
+//}
+//
+//def readDependencies(String path) {
+//    def content = readFile(path).readLines()
+//
+//    def dependencies = []
+//
+//    for (int i = 1; i < content.size(); i++) { // Start from index 1 to skip the first line - jar itself
+//        if (content[i].startsWith('#')) break // Stop processing when '#' is encountered
+//        dependencies.add(content[i].split(' ')[1]) // Extract dependency
+//    }
+//
+//    return dependencies;
+//}
 
 def fingerprintDependencies(Model pom, String filterGroupId) {
     def file = 'target/tempDependencyTree.txt'
+    runMvn("dependency:tree -DoutputFile=${file} -DoutputType='tgf'")
 
-    def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
-    runMvn(command)
+    def processDependencies = { Model pomModel, String basePath ->
+        def version = pomModel.version ?: pomModel.parent.version
+        println "A: ${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
+        fingerprint "${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
+        readFile("${basePath}/${file}").readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
+            def parts = line.split(':')
+            println "D: ${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
+            fingerprint "${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
+        }
+    }
 
     if (pom.modules) {
         pom.modules.each { module ->
-            def submodulePom = readMavenPom file: "${module}/pom.xml"
-            //def groupId = submodulePom.groupId ?: pom.groupId
-            def artifactId = submodulePom.artifactId
-            def version = submodulePom.version ?: pom.version
-
-            def artifactPath = "${module}/target/${artifactId}-${version}.jar"
-            fingerprint artifactPath
-            println "FP: ${artifactPath}"
-
-            def dependenciesPath = "${module}/${file}"
-            def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(filterGroupId) }
-            dependencies.each { line ->
-                def parts = line.split(':')
-                def depArtifactId = parts[1].trim()
-                def depVersion = parts[3].trim()
-                def depArtifactPath = "${module}/target/lib/${depArtifactId}-${depVersion}.jar"
-                fingerprint depArtifactPath
-                println "FP: ${depArtifactPath}"
-            }
+            processDependencies(readMavenPom(file: "${module}/pom.xml"), module)
         }
     } else {
-        def artifactPath = "target/${pom.artifactId}-${pom.version}.jar"
-        fingerprint artifactPath
-        println "FP: ${artifactPath}"
-
-        def dependenciesPath = "${file}"
-        def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(filterGroupId) }
-        dependencies.each { line ->
-            def parts = line.split(':')
-            def depArtifactId = parts[1].trim()
-            def depVersion = parts[3].trim()
-            def depArtifactPath = "target/lib/${depArtifactId}-${depVersion}.jar"
-            fingerprint depArtifactPath
-            println "FP: ${depArtifactPath}"
-        }
-
+        processDependencies(pom, '')
     }
 }
