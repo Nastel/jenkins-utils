@@ -88,7 +88,7 @@ def call() {
                             }
                         }
 
-                        if(isPackageInStagingRepo) {
+                        if (isPackageInStagingRepo) {
                             input message: "Package already exists in staging. Delete and rebuild?", ok: 'Yes'
 
                             deletePackage(env.STAGING_REPO, pom.groupId, pom.artifactId, pom.version)
@@ -107,7 +107,7 @@ def call() {
                 }
             }
 
-            stage('Build & Stage') {
+            stage('Build & Deploy') {
                 steps {
                     script {
                         // Step 1: Execute the Maven build
