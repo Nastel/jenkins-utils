@@ -130,8 +130,8 @@ def call() {
                 steps {
                     script {
                         fingerprintDependencies(pom, 'com.nastel')
-                        def dependencies = listMavenDependencies(pom, 'com.nastel')
-                        dependencies.each { println "${it}" }
+//                        def dependencies = listMavenDependencies(pom, 'com.nastel')
+//                        dependencies.each { println "${it}" }
 
                     }
 //                    script {
@@ -336,6 +336,9 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
     if (pom.modules) {
         pom.modules.each { module ->
             //def groupId = module.groupId ?: pom.groupId
+            println "${module}"
+            println "${module.artifactId}"
+
             def artifactId = module.artifactId
             def version = module.version ?: pom.version
 
