@@ -390,8 +390,8 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
         readDependencies(infoPath).findAll { it.startsWith(filterGroupId) }.each { line ->
             def (groupId, artifactId, version) = parseDependency(line)
             def groupPath = groupId.replace('.', '/')
-            //def dependencyPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
-            def dependencyPath = (basePath ? "${basePath}/" : '') + "target/lib/${artifactId}-${version}.jar"
+            def dependencyPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
+//            def dependencyPath = (basePath ? "${basePath}/" : '') + "target/lib/${artifactId}-${version}.jar"
             println "FP: ${dependencyPath}"
             fingerprint dependencyPath
         }
