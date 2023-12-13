@@ -300,13 +300,14 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
 }
 
 def listMavenDependencies(String pomPath) {
-    def command = "--file ${pomPath} dependency:tree -DoutputFile=tempDependencyTree.txt"
+    def file = 'target/tempDependencyTree.txt'
+    def command = "--file ${pomPath} dependency:tree -DoutputFile=${file}"
     runMvn(command)
-    def dependencies = readFile('tempDependencyTree.txt').readLines()
+    def dependencies = readFile(file).readLines()
     def filteredDependencies = dependencies.findAll { it =~ /^   [^|\\-]/ }
 
     // Optional: Clean up temp file
-    sh 'rm -f tempDependencyTree.txt'
+    sh 'rm -f ${file}'
 
     return filteredDependencies
 }
