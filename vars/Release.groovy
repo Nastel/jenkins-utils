@@ -229,7 +229,7 @@ def deleteLocal(String groupId, String artifactId, String version) {
 
     // Delete the artifact directory
     println "Deleting ${artifactPath}"
-    new File(artifactPath).deleteDir()
+    sh "rm -rf ${artifactPath}"
 }
 
 // Function to copy a package version from one repository to another
