@@ -110,8 +110,8 @@ def call() {
             stage('Build & Deploy') {
                 steps {
                     script {
-                        sh "rm -rf ${env.MAVEN_LOCAL_REPO}/com/meshiq/"
-                        sh "rm -rf ${env.MAVEN_LOCAL_REPO}/com/nastel/"
+                        sh "find ${env.MAVEN_LOCAL_REPO}/com/meshiq/ -type d ! -name '*-SNAPSHOT*'"
+                        sh "find ${env.MAVEN_LOCAL_REPO}/com/nastel/ -type d ! -name '*-SNAPSHOT*'"
                     }
                     script {
 
