@@ -94,7 +94,7 @@ def call() {
                 steps {
                     script {
                         // Step 1: Confirm rebuild if package exists in staging
-                        input message: "Package already exists in staging. Proceed with build?", ok: 'Yes'
+                        //input message: "Package already exists in staging. Proceed with build?", ok: 'Yes'
                     }
                 }
             }
@@ -387,12 +387,14 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
 
     def processDependencies = { Model pomModel, String basePath ->
         def infoPath = basePath ? "${basePath}/${file}" : file
+        println "Info: ${infoPath}"
         readFile(infoPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
             def (groupId, artifactId, version) = parseDependency(line)
             def groupPath = groupId.replace('.', '/')
             def dependencyPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
-            fingerprint dependencyPath
             println "FP: ${dependencyPath}"
+            fingerprint dependencyPath
+
         }
     }
 
