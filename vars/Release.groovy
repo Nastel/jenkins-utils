@@ -131,6 +131,7 @@ def call() {
             stage('Fingerprint Artifacts') {
                 steps {
                     script {
+                        fingerprintArtifacts(pom)
                         fingerprintDependencies(pom, 'com.nastel')
 //                        def dependencies = listMavenDependencies(pom, 'com.nastel')
 //                        dependencies.each { println "${it}" }
@@ -355,6 +356,24 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
 //    }
 //}
 
+def fingerprintArtifacts(Model pom) {
+
+    def processArtifact = { Model pomModel, String basePath ->
+        def version = pomModel.version ?: pomModel.parent.version
+        def artifactPath = (basePath ? "${basePath}/" : '') + "target/${pomModel.artifactId}-${version}.${pomModel.packaging}"
+        println "A: ${artifactPath}"
+        fingerprint artifactPath
+    }
+
+    if (pom.modules) {
+        pom.modules.each { module ->
+            processArtifact(readMavenPom(file: "${module}/pom.xml"), module)
+        }
+    } else {
+        processArtifact(pom, '')
+    }
+}
+
 def fingerprintDependencies(Model pom, String filterGroupId) {
     def file = 'target/tempDependencyTree.txt'
     runMvn("dependency:tree -DoutputFile=${file} -DoutputType='tgf'")
@@ -367,13 +386,13 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
     }
 
     def processDependencies = { Model pomModel, String basePath ->
-        def dependenciesPath = basePath ? "${basePath}/${file}" : file
-        readFile(dependenciesPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
+        def infoPath = basePath ? "${basePath}/${file}" : file
+        readFile(infoPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
             def (groupId, artifactId, version) = parseDependency(line)
             def groupPath = groupId.replace('.', '/')
-            def artifactPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
-            fingerprint artifactPath
-            println "FP: ${artifactPath}"
+            def dependencyPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
+            fingerprint dependencyPath
+            println "FP: ${dependencyPath}"
         }
     }
 
