@@ -334,22 +334,42 @@ def fingerprintDependencies(Model pom, String groupId) {
     def command = "dependency:tree -DoutputFile=${file} -DoutputType='tgf'"
     runMvn(command)
 
-    // Fingerprint the JAR file of the project
-    def artifactPath = "${pomPath.replace('pom.xml', '')}target/${pom.artifactId}-${pom.version}.jar"
-    fingerprint artifactPath
-    println "FP: ${artifactPath}"
+    if (pom.modules) {
+        pom.modules.each { module ->
+            def submodulePom = readMavenPom file: "${module}/${file}"
+            def submoduleArtifactId = submodulePom.artifactId ?: pom.artifactId
+            def submoduleVersion = submodulePom.version ?: pom.version
 
-    // List and fingerprint dependencies
-    sh "mvn -f ${pomPath} dependency:list -DoutputFile=deps.txt -DincludeGroupIds=${groupId}"
-    def deps = readFile('deps.txt').readLines()
-    deps.each { line ->
-        if (line.contains(groupId)) {
+            def artifactPath = "target/${submoduleArtifactId}-${submoduleVersion}.jar"
+            fingerprint artifactPath
+            println "FP: ${artifactPath}"
+
+            def dependenciesPath = "$module/${file}"
+            def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(groupId) }
+            dependencies.each { line ->
+                def parts = line.split(':')
+                def depArtifactId = parts[1].trim()
+                def depVersion = parts[3].trim()
+                def depArtifactPath = "${module}/target/lib/${depArtifactId}-${depVersion}.jar"
+                fingerprint depArtifactPath
+                println "FP: ${depArtifactPath}"
+            }
+        }
+    } else {
+        def artifactPath = "target/${pom.artifactId}-${pom.version}.jar"
+        fingerprint artifactPath
+        println "FP: ${artifactPath}"
+
+        def dependenciesPath = "${file}"
+        def dependencies = readDependencies(dependenciesPath).unique().findAll { d -> d.startsWith(groupId) }
+        dependencies.each { line ->
             def parts = line.split(':')
-            def artifact = parts[1].trim()
-            def version = parts[3].trim()
-            def depArtifactPath = "${mavenRepoLocal}/${groupId.replace('.', '/')}/${artifact}/${version}/${artifact}-${version}.jar"
+            def depArtifactId = parts[1].trim()
+            def depVersion = parts[3].trim()
+            def depArtifactPath = "target/lib/${depArtifactId}-${depVersion}.jar"
             fingerprint depArtifactPath
             println "FP: ${depArtifactPath}"
         }
+
     }
 }
