@@ -365,7 +365,7 @@ def fingerprintArtifacts(Model pom) {
 }
 
 def fingerprintDependencies(Model pom, String filterGroupId) {
-    def file = 'target/tempDependencyTree.txt'
+    def file = 'target/dependency-tree.txt'
     runMvn("dependency:tree -DoutputFile=${file} -DoutputType='tgf'")
 
     def localRepoBasePath = "${env.MAVEN_LOCAL_REPO}"
@@ -389,9 +389,9 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
         def infoPath = basePath ? "${basePath}/${file}" : file
         readDependencies(infoPath).findAll { it.startsWith(filterGroupId) }.each { line ->
             def (groupId, artifactId, version) = parseDependency(line)
-            def groupPath = groupId.replace('.', '/')
-            def dependencyPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
-//            def dependencyPath = (basePath ? "${basePath}/" : '') + "target/lib/${artifactId}-${version}.jar"
+//            def groupPath = groupId.replace('.', '/')
+//            def dependencyPath = "${localRepoBasePath}/${groupPath}/${artifactId}/${version}/${artifactId}-${version}.jar"
+            def dependencyPath = (basePath ? "${basePath}/" : '') + "target/dependencies/${artifactId}-${version}.jar"
             println "FP: ${dependencyPath}"
             fingerprint dependencyPath
         }
