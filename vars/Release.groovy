@@ -319,18 +319,7 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
 //    return dependencies
 //}
 //
-//def readDependencies(String path) {
-//    def content = readFile(path).readLines()
-//
-//    def dependencies = []
-//
-//    for (int i = 1; i < content.size(); i++) { // Start from index 1 to skip the first line - jar itself
-//        if (content[i].startsWith('#')) break // Stop processing when '#' is encountered
-//        dependencies.add(content[i].split(' ')[1]) // Extract dependency
-//    }
-//
-//    return dependencies;
-//}
+
 
 //def fingerprintDependencies(Model pom, String filterGroupId) {
 //    def file = 'target/tempDependencyTree.txt'
@@ -381,6 +370,16 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
 
     def localRepoBasePath = "${env.MAVEN_LOCAL_REPO}"
 
+    def readDependencies = { String path ->
+        def content = readFile(path).readLines()
+        def dependencies = []
+        for (int i = 1; i < content.size(); i++) { // Start from index 1 to skip the first line - jar itself
+            if (content[i].startsWith('#')) break // Stop processing when '#' is encountered
+            dependencies.add(content[i].split(' ')[1]) // Extract dependency
+        }
+        return dependencies;
+    }
+
     def parseDependency = { String dependency ->
         def parts = dependency.split(':')
         return [parts[0].trim(), parts[1].trim(), parts[3].trim()] // groupId, artifactId, version
@@ -389,7 +388,8 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
     def processDependencies = { Model pomModel, String basePath ->
         def infoPath = basePath ? "${basePath}/${file}" : file
         println "Info: ${infoPath}"
-        readFile(infoPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
+        readDependencies(infoPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
+            println "line: ${line}"
             def (groupId, artifactId, version) = parseDependency(line)
             println "parsed: ${groupId} ${artifactId} ${version}"
             def groupPath = groupId.replace('.', '/')
