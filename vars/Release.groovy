@@ -388,7 +388,7 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
     def processDependencies = { Model pomModel, String basePath ->
         def infoPath = basePath ? "${basePath}/${file}" : file
         println "Info: ${infoPath}"
-        readDependencies(infoPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
+        readDependencies(infoPath).findAll { it.startsWith(filterGroupId) }.each { line ->
             println "line: ${line}"
             def (groupId, artifactId, version) = parseDependency(line)
             println "parsed: ${groupId} ${artifactId} ${version}"
