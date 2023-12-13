@@ -337,7 +337,8 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
         def version = pomModel.version ?: pomModel.parent.version
         println "A: ${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
         fingerprint "${basePath}/${pomModel.artifactId}-${version}.${pomModel.packaging}"
-        readFile("${basePath}/${file}").readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
+        def dependenciesPath = basePath ? "${basePath}/${file}" : file
+        readFile(dependenciesPath).readLines().findAll { it.startsWith(filterGroupId) }.each { line ->
             def parts = line.split(':')
             println "D: ${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
             fingerprint "${basePath}/lib/${parts[1].trim()}-${parts[3].trim()}.jar"
