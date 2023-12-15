@@ -41,23 +41,9 @@
                     </snapshots>
                 </repository>
             </repositories>
-        </profile>
-        <profile>
-            <id>snapshot</id>
             <properties>
-                <altDeploymentRepository>meshiq-snapshots::https://meshiq-592078199039.d.codeartifact.us-east-1.amazonaws.com/maven/snapshots/</altDeploymentRepository>
-            </properties>
-        </profile>
-        <profile>
-            <id>staging</id>
-            <properties>
-                <altDeploymentRepository>meshiq-staging::https://meshiq-592078199039.d.codeartifact.us-east-1.amazonaws.com/maven/staging/</altDeploymentRepository>
-            </properties>
-        </profile>
-        <profile>
-            <id>release</id>
-            <properties>
-                <altDeploymentRepository>meshiq-releases::https://meshiq-592078199039.d.codeartifact.us-east-1.amazonaws.com/maven/releases/</altDeploymentRepository>
+                <altReleaseDeploymentRepository>meshiq-staging::https://meshiq-592078199039.d.codeartifact.us-east-1.amazonaws.com/maven/staging/</altReleaseDeploymentRepository>
+                <altSnapshotDeploymentRepository>meshiq-snapshots::https://meshiq-592078199039.d.codeartifact.us-east-1.amazonaws.com/maven/snapshots/</altSnapshotDeploymentRepository>
             </properties>
         </profile>
     </profiles>

@@ -118,7 +118,7 @@ def call() {
                     script {
 
                         // Step 1: Execute the Maven build
-                        runMvn("clean deploy -P jenkins -P staging -Djenkins.build.number=${currentBuild.number}")
+                        runMvn("clean deploy -P jenkins,release -Djenkins.build.number=${currentBuild.number}")
                     }
                 }
             }
@@ -147,6 +147,7 @@ def call() {
                     script {
                         // Step 1: Logic to promote from staging to release
                         copyPackage(env.STAGING_REPO, env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)
+                        currentBuild.description = "${pom.version} [released]"
                     }
                 }
             }
