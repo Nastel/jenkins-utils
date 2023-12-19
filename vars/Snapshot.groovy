@@ -55,6 +55,9 @@ def call() {
 
             stage('Validation') {
                 steps {
+                    script {
+                        printline "Validation"
+                    }
 //                    script {
 //                        def jobName = env.JOB_NAME
 //                        def pendingBuildNumbers = extractPendingBuildNumbers(jobName, currentBuild, pom.version)
