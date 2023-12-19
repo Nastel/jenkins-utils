@@ -1,4 +1,4 @@
 def call() {
-    def release = new Release()
-    release.call()
+    def snapshot = new Snapshot()
+    snapshot.call()
 }
