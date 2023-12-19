@@ -117,7 +117,7 @@ def call() {
                     script {
 
                         // Step 1: Execute the Maven build
-                        runMvn("clean deploy -P jenkins,snapshot -Djenkins.build.number=${currentBuild.number}")
+                        runMvn("clean deploy --update-snapshots -P jenkins,snapshot -Djenkins.build.number=${currentBuild.number}")
                     }
                 }
             }
