@@ -56,7 +56,7 @@ def call() {
             stage('Validation') {
                 steps {
                     script {
-                        printline "Validation"
+                        println "Validation"
                     }
 //                    script {
 //                        def jobName = env.JOB_NAME
