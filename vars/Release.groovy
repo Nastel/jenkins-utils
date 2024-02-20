@@ -126,8 +126,8 @@ def call() {
             stage('Fingerprint Artifacts') {
                 steps {
                     script {
-                        fingerprintArtifacts(pom)
-                        fingerprintDependencies(pom, 'com.nastel')
+                        //fingerprintArtifacts(pom)
+                        //fingerprintDependencies(pom, 'com.nastel')
                     }
                 }
             }
