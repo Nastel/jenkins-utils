@@ -123,14 +123,14 @@ def call() {
                 }
             }
 
-            stage('Fingerprint Artifacts') {
-                steps {
-                    script {
-                        //fingerprintArtifacts(pom)
-                        //fingerprintDependencies(pom, 'com.nastel')
-                    }
-                }
-            }
+//            stage('Fingerprint Artifacts') {
+//                steps {
+//                    script {
+//                        fingerprintArtifacts(pom)
+//                        fingerprintDependencies(pom, 'com.nastel')
+//                    }
+//                }
+//            }
 
 
             stage('Quality Assurance') {
