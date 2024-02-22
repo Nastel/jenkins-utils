@@ -118,7 +118,7 @@ def call() {
                     script {
 
                         // Step 1: Execute the Maven build
-                        runMvn("clean deploy -P jenkins,release -Djenkins.build.number=${currentBuild.number}")
+                        runMvn("clean deploy -P jenkins,release,assemble -Djenkins.build.number=${currentBuild.number}")
                     }
                 }
             }
@@ -340,13 +340,13 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
 
 def deployToCIFS(String cifsConfig, String destination, String prefix = '') {
     // Define the pattern to match .pkg, .zip, and .tar.gz files in the target directories
-    String srcFiles = "${prefix}**/*.pkg,${prefix}**/*.zip,${prefix}**/*.tar.gz"
+    String srcFiles = "${prefix}**/target/**/*.pkg,${prefix}**/target/**/*.zip,${prefix}**/target/**/*.tar.gz"
 
     // Publish files over CIFS
     cifsPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: true, publishers: [
             [configName: cifsConfig,
              transfers: [
-                     [cleanRemote: false, excludes: '', flatten: false, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: prefix, sourceFiles: srcFiles]
+                     [cleanRemote: false, excludes: '', flatten: true, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: prefix, sourceFiles: srcFiles]
              ],
              usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false
             ]
