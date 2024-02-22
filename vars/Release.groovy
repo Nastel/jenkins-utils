@@ -354,7 +354,7 @@ def deployToCIFS(String cifsConfig, String destination) {
     cifsPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: true, publishers: [
             [configName: cifsConfig,
              transfers: [
-                     [cleanRemote: false, excludes: '', flatten: true, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: '', sourceFiles: srcFiles]
+                     [cleanRemote: true, excludes: '', flatten: true, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: '', sourceFiles: srcFiles]
              ],
              usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true
             ]
