@@ -138,8 +138,10 @@ def call() {
             stage('Upload to Staging') {
                 steps {
                     script {
+                        def fullJobName = env.JOB_NAME
+                        def folderName = fullJobName.tokenize('/')[0..-2].join('/')
                         // Call the function with CIFS config, destination path
-                        deployToCIFS(env.CIFS_CONFIG_ID, "/staging/${env.BRANCH_NAME}/${env.CIFS_DIR}")
+                        deployToCIFS(env.CIFS_CONFIG_ID, "/staging/${folderName}/${env.CIFS_DIR}")
                     }
                 }
             }
