@@ -139,7 +139,7 @@ def call() {
                 steps {
                     script {
                         // Call the function with CIFS config, destination path
-                        deployToCIFS(${CIFS_CONFIG_ID}, '/staging/' + ${env.BRANCH_NAME} + ${env.CIFS_DIR})
+                        deployToCIFS(env.CIFS_CONFIG_ID, "/staging/${env.BRANCH_NAME}/${env.CIFS_DIR}")
                     }
                 }
             }
@@ -341,6 +341,8 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
 }
 
 def deployToCIFS(String cifsConfig, String destination) {
+    println "cfg: ${dependencyPath}"
+    println "dest: ${destination}"
     // Define the pattern to match .pkg, .zip, and .tar.gz files in the target directories
     String srcFiles = "**/target/**/*.pkg,**/target/**/*.zip,**/target/**/*.tar.gz"
 
