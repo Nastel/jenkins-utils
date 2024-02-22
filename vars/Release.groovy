@@ -146,7 +146,7 @@ def call() {
                         def folderName = fullJobName.tokenize('/')[0..-2].join('/')
                         // Call the function with CIFS config, destination path
                         //deployToCIFS(env.CIFS_CONFIG_ID, "/staging/${folderName}/${env.CIFS_DIR}")
-                        deployToCIFS(env.CIFS_CONFIG_ID, "/staging")
+                        deployToCIFS(env.CIFS_CONFIG_ID, '')
                     }
                 }
             }
