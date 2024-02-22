@@ -30,6 +30,8 @@ def call() {
             // Repository Variables
             RELEASES_REPO = 'releases'
             STAGING_REPO = 'staging'
+
+            CIFS_CONFIG_ID = 'pluto'
         }
 
         stages {
@@ -133,11 +135,11 @@ def call() {
 //            }
 
 
-            stage('Upload') {
+            stage('Upload to Staging') {
                 steps {
                     script {
-                        // Call the function with CIFS config, destination path, and optional prefix
-                        deployToCIFS('pluto', '/meshiq')
+                        // Call the function with CIFS config, destination path
+                        deployToCIFS(${CIFS_CONFIG_ID}, '/staging/' + ${env.BRANCH_NAME} + ${env.CIFS_DIR})
                     }
                 }
             }
@@ -338,17 +340,17 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
     }
 }
 
-def deployToCIFS(String cifsConfig, String destination, String prefix = '') {
+def deployToCIFS(String cifsConfig, String destination) {
     // Define the pattern to match .pkg, .zip, and .tar.gz files in the target directories
-    String srcFiles = "${prefix}**/target/**/*.pkg,${prefix}**/target/**/*.zip,${prefix}**/target/**/*.tar.gz"
+    String srcFiles = "**/target/**/*.pkg,**/target/**/*.zip,**/target/**/*.tar.gz"
 
     // Publish files over CIFS
     cifsPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: true, publishers: [
             [configName: cifsConfig,
              transfers: [
-                     [cleanRemote: false, excludes: '', flatten: true, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: prefix, sourceFiles: srcFiles]
+                     [cleanRemote: false, excludes: '', flatten: true, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: '', sourceFiles: srcFiles]
              ],
-             usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false
+             usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true
             ]
     ]
 }
