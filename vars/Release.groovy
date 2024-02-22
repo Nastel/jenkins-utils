@@ -136,12 +136,17 @@ def call() {
 
 
             stage('Upload to Staging') {
+                when {
+                    // Check if the environment variable is set and not empty
+                    expression { return env.CIFS_DIR != null && env.CIFS_DIR != '' }
+                }
                 steps {
                     script {
                         def fullJobName = env.JOB_NAME
                         def folderName = fullJobName.tokenize('/')[0..-2].join('/')
                         // Call the function with CIFS config, destination path
-                        deployToCIFS(env.CIFS_CONFIG_ID, "/staging/${folderName}/${env.CIFS_DIR}")
+                        //deployToCIFS(env.CIFS_CONFIG_ID, "/staging/${folderName}/${env.CIFS_DIR}")
+                        deployToCIFS(env.CIFS_CONFIG_ID, "/staging")
                     }
                 }
             }
@@ -343,8 +348,6 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
 }
 
 def deployToCIFS(String cifsConfig, String destination) {
-    println "cfg: ${cifsConfig}"
-    println "dest: ${destination}"
     // Define the pattern to match .pkg, .zip, and .tar.gz files in the target directories
     String srcFiles = "**/target/**/*.pkg,**/target/**/*.zip,**/target/**/*.tar.gz"
 
