@@ -133,6 +133,15 @@ def call() {
 //            }
 
 
+            stage('Upload') {
+                steps {
+                    script {
+                        // Call the function with CIFS config, destination path, and optional prefix
+                        deployToCIFS('pluto', '/meshiq')
+                    }
+                }
+            }
+
             stage('Quality Assurance') {
                 steps {
                     script {
@@ -142,14 +151,6 @@ def call() {
                 }
             }
 
-            stage('Deploy') {
-                steps {
-                    script {
-                        // Call the function with CIFS config, destination path, and optional prefix
-                        deployToCIFS('pluto', '/meshiq')
-                    }
-                }
-            }
 
             stage('Release') {
                 steps {
