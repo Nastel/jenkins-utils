@@ -341,7 +341,7 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
 }
 
 def deployToCIFS(String cifsConfig, String destination) {
-    println "cfg: ${dependencyPath}"
+    println "cfg: ${cifsConfig}"
     println "dest: ${destination}"
     // Define the pattern to match .pkg, .zip, and .tar.gz files in the target directories
     String srcFiles = "**/target/**/*.pkg,**/target/**/*.zip,**/target/**/*.tar.gz"
