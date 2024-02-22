@@ -39,7 +39,8 @@ def call() {
                 steps {
                     script {
                         // Step 1: Read Maven POM
-                        pom = readMavenPom file: 'pom.xml'
+                        sh "mvn help:effective-pom -Doutput=effective-pom.xml -P jenkins,release,assemble"
+                        pom = readMavenPom file: 'effective-pom.xml'
 
                         // Set POM_VERSION as an environment variable
                         env.POM_VERSION = pom.version
