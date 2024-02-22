@@ -142,6 +142,15 @@ def call() {
                 }
             }
 
+            stage('Deploy') {
+                steps {
+                    script {
+                        // Call the function with CIFS config, destination path, and optional prefix
+                        deployToCIFS('pluto', '/meshiq')
+                    }
+                }
+            }
+
             stage('Release') {
                 steps {
                     script {
@@ -326,5 +335,20 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
     } else {
         processDependencies(pom, '')
     }
+}
+
+def deployToCIFS(String cifsConfig, String destination, String prefix = '') {
+    // Define the pattern to match .pkg, .zip, and .tar.gz files in the target directories
+    String srcFiles = "${prefix}**/*.pkg,${prefix}**/*.zip,${prefix}**/*.tar.gz"
+
+    // Publish files over CIFS
+    cifsPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: true, publishers: [
+            [configName: cifsConfig,
+             transfers: [
+                     [cleanRemote: false, excludes: '', flatten: false, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: prefix, sourceFiles: srcFiles]
+             ],
+             usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false
+            ]
+    ]
 }
 
