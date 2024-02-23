@@ -106,6 +106,10 @@ def call() {
                                     deleteLocal(groupId, artifactId, version)
                                 }
                             }
+                            // Remove the staging tag
+                            deleteGitTag("v${pom.version}-staging")
+                            // cleanup staging folder in pluto
+                            cleanCIFS(buildCIFSPath())
                         }
                     }
                 }
@@ -134,6 +138,13 @@ def call() {
 //                }
 //            }
 
+            stage('Add Staging Tag') {
+                steps {
+                    script {
+                        addGitTag("v${pom.version}-staging")
+                    }
+                }
+            }
 
             stage('Upload to Staging') {
                 when {
@@ -142,10 +153,7 @@ def call() {
                 }
                 steps {
                     script {
-                        def fullJobName = env.JOB_NAME
-                        def folderName = fullJobName.tokenize('/')[0..-2].join('/')
-                        // Call the function with CIFS config, destination path
-                        deployToCIFS(env.CIFS_CONFIG_ID, "/staging/${folderName}/${env.CIFS_DIR}")
+                        deployToCIFS(buildCIFSPath())
                     }
                 }
             }
@@ -159,6 +167,17 @@ def call() {
                 }
             }
 
+            stage('Add Release Tag') {
+                steps {
+                    script {
+                        // Remove the staging tag
+                        deleteGitTag("v${pom.version}-staging")
+
+                        // Add release tag
+                        addGitTag("v${pom.version}")
+                    }
+                }
+            }
 
             stage('Release') {
                 steps {
@@ -346,18 +365,56 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
     }
 }
 
-def deployToCIFS(String cifsConfig, String destination) {
+def cleanCIFS(String destination) {
+    // File that does not exist, we call this for cleanRemote
+    String srcFiles = "fake.file"
+
+    // Publish files over CIFS
+    cifsPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: true, publishers: [
+            [configName: env.CIFS_CONFIG_ID,
+             transfers: [
+                     [cleanRemote: true, excludes: '', flatten: false, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: '', sourceFiles: srcFiles]
+             ],
+             usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true
+            ]
+    ]
+}
+
+def buildCIFSPath() {
+    def fullJobName = env.JOB_NAME
+    def folderName = fullJobName.tokenize('/')[0..-2].join('/')
+    return "/staging/${folderName}/${env.CIFS_DIR}"
+}
+
+def deployToCIFS(String destination) {
     // Define the pattern to match .pkg, .zip, and .tar.gz files in the target directories
     String srcFiles = "**/target/**/*.pkg,**/target/**/*.zip,**/target/**/*.tar.gz"
 
     // Publish files over CIFS
     cifsPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: true, publishers: [
-            [configName: cifsConfig,
+            [configName: env.CIFS_CONFIG_ID,
              transfers: [
                      [cleanRemote: true, excludes: '', flatten: true, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: '', sourceFiles: srcFiles]
              ],
              usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true
             ]
     ]
+}
+
+def deleteGitTag(String tag) {
+    // Check if the tag exists
+    if (sh(script: "git tag -l | grep -w ${tag}", returnStatus: true) == 0) {
+        println "Deleting existing tag: ${tag}"
+        sh "git tag -d ${tag}"
+        sh "git push origin :refs/tags/${tag}"
+    } else {
+        println "Tag ${tag} does not exist. No deletion necessary."
+    }
+}
+
+def addGitTag(String tag) {
+    println "Adding tag: ${tag}"
+    sh "git tag ${tag}"
+    sh "git push --tags"
 }
 
