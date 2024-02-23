@@ -402,7 +402,8 @@ def deleteGitTag(String tag) {
     if (sh(script: "git tag -l | grep -w ${tag}", returnStatus: true) == 0) {
         println "Deleting existing tag: ${tag}"
         sh "git tag -d ${tag}"
-        sh "git push origin :refs/tags/${tag}"
+        runGit("push origin :refs/tags/${tag}")
+
     } else {
         println "Tag ${tag} does not exist. No deletion necessary."
     }
@@ -411,15 +412,14 @@ def deleteGitTag(String tag) {
 def addGitTag(String tag) {
     println "Adding tag: ${tag}"
     sh "git tag ${tag}"
+    runGit("push --tags")
+}
+
+def runGit(String command) {
     withCredentials([usernamePassword(credentialsId: 'temp-user', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
         sh """
-            # Temporarily configure Git to use credentials provided by Jenkins
             git config credential.helper '!f() { echo username=\$GIT_USER; echo password=\$GIT_PASS; }; f'
-        
-            # Push tags to the remote repository
-            git push --tags
-        
-            # Remove the temporary Git credential configuration
+            git ${command}
             git config --unset credential.helper
         """
     }
