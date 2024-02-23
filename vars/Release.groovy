@@ -6,14 +6,19 @@ def call() {
         agent any
 
         tools {
+            git 'GIT'
             maven 'M3'
             jdk 'JDK11'
         }
 
         environment {
+            GIT_HOME = tool 'GIT'
             MVN_HOME = tool 'M3'
             MAVEN_LOCAL_REPO = "${env.JENKINS_HOME}/.m2/repository"
             JAVA_HOME = tool 'JDK11'
+
+            GIT_CREDENTIALS_ID = 'github-user'
+
             CODEARTIFACT_AUTH_TOKEN = ''
 
             // AWS Properties
@@ -415,7 +420,7 @@ def addGitTag(String tag) {
 }
 
 def runGit(String command) {
-    withCredentials([usernamePassword(credentialsId: 'temp-user', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
         sh """
             git config credential.helper '!f() { echo username=\$GIT_USER; echo password=\$GIT_PASS; }; f'
             git ${command}
