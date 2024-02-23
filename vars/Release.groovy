@@ -106,11 +106,15 @@ def call() {
                                     deleteLocal(groupId, artifactId, version)
                                 }
                             }
-                            // Remove the staging tag
-                            deleteGitTag("v${pom.version}-staging")
-                            // cleanup staging folder in pluto
-                            cleanCIFS(buildCIFSPath())
                         }
+                    }
+                    script {
+                        // Remove the staging tag
+                        deleteGitTag("v${pom.version}-staging")
+                    }
+                    script {
+                        // cleanup staging folder in pluto
+                        cleanCIFS(buildCIFSPath())
                     }
                 }
             }
@@ -134,7 +138,7 @@ def call() {
 //                }
 //            }
 
-            stage('Add Staging Tag') {
+            stage('Staging Tag') {
                 steps {
                     script {
                         addGitTag("v${pom.version}-staging")
@@ -142,7 +146,7 @@ def call() {
                 }
             }
 
-            stage('Upload to Staging') {
+            stage('Upload') {
                 when {
                     // Check if the environment variable is set and not empty
                     expression { return env.CIFS_DIR != null && env.CIFS_DIR != '' }
@@ -163,24 +167,19 @@ def call() {
                 }
             }
 
-            stage('Add Release Tag') {
-                steps {
-                    script {
-                        // Remove the staging tag
-                        deleteGitTag("v${pom.version}-staging")
-
-                        // Add release tag
-                        addGitTag("v${pom.version}")
-                    }
-                }
-            }
-
             stage('Release') {
                 steps {
                     script {
                         // Step 1: Logic to promote from staging to release
                         copyPackage(env.STAGING_REPO, env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)
                         currentBuild.description = "${pom.version} [released]"
+                    }
+                    script {
+                        // Remove the staging tag
+                        deleteGitTag("v${pom.version}-staging")
+
+                        // Add release tag
+                        addGitTag("v${pom.version}")
                     }
                 }
             }
