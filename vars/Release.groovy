@@ -6,14 +6,19 @@ def call() {
         agent any
 
         tools {
+            git 'GIT'
             maven 'M3'
             jdk 'JDK11'
         }
 
         environment {
+            GIT_HOME = tool 'GIT'
             MVN_HOME = tool 'M3'
             MAVEN_LOCAL_REPO = "${env.JENKINS_HOME}/.m2/repository"
             JAVA_HOME = tool 'JDK11'
+
+            GIT_CREDENTIALS_ID = 'github-user'
+
             CODEARTIFACT_AUTH_TOKEN = ''
 
             // AWS Properties
@@ -30,6 +35,8 @@ def call() {
             // Repository Variables
             RELEASES_REPO = 'releases'
             STAGING_REPO = 'staging'
+
+            CIFS_CONFIG_ID = 'pluto'
         }
 
         stages {
@@ -106,19 +113,23 @@ def call() {
                             }
                         }
                     }
+                    script {
+                        // Remove the staging tag
+                        deleteGitTag("v${pom.version}-staging")
+                    }
+                    script {
+                        // cleanup staging folder in pluto
+                        cleanCIFS(buildCIFSPath())
+                    }
                 }
             }
 
             stage('Build & Deploy') {
                 steps {
-//                    script {
-//                        sh "find ${env.MAVEN_LOCAL_REPO}/com/meshiq/ -type d ! -name '*-SNAPSHOT*'"
-//                        sh "find ${env.MAVEN_LOCAL_REPO}/com/nastel/ -type d ! -name '*-SNAPSHOT*'"
-//                    }
                     script {
 
                         // Step 1: Execute the Maven build
-                        runMvn("clean deploy -P jenkins,release -Djenkins.build.number=${currentBuild.number}")
+                        runMvn("clean deploy -P jenkins,release,assemble -Djenkins.build.number=${currentBuild.number}")
                     }
                 }
             }
@@ -132,6 +143,25 @@ def call() {
 //                }
 //            }
 
+            stage('Staging Tag') {
+                steps {
+                    script {
+                        addGitTag("v${pom.version}-staging")
+                    }
+                }
+            }
+
+            stage('Upload') {
+                when {
+                    // Check if the environment variable is set and not empty
+                    expression { return env.CIFS_DIR != null && env.CIFS_DIR != '' }
+                }
+                steps {
+                    script {
+                        deployToCIFS(buildCIFSPath())
+                    }
+                }
+            }
 
             stage('Quality Assurance') {
                 steps {
@@ -148,6 +178,13 @@ def call() {
                         // Step 1: Logic to promote from staging to release
                         copyPackage(env.STAGING_REPO, env.RELEASES_REPO, pom.groupId, pom.artifactId, pom.version)
                         currentBuild.description = "${pom.version} [released]"
+                    }
+                    script {
+                        // Remove the staging tag
+                        deleteGitTag("v${pom.version}-staging")
+
+                        // Add release tag
+                        addGitTag("v${pom.version}")
                     }
                 }
             }
@@ -216,7 +253,7 @@ def deletePackage(String repository, String packageGroup, String packageName, St
         def command = "aws codeartifact delete-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}"
         def status = sh(script: command, returnStatus: true)
         if (status != 0) {
-            echo "Package ${packageName} version ${packageVersion} not found or could not be deleted. Continuing..."
+            println "Package ${packageName} version ${packageVersion} not found or could not be deleted. Continuing..."
         }
     }
 }
@@ -259,7 +296,7 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
             }
         }
     } else {
-        echo "Unable to access job builds for ${jobName}"
+        println "Unable to access job builds for ${jobName}"
     }
 
     return pendingBuildNumbers
@@ -325,6 +362,70 @@ def fingerprintDependencies(Model pom, String filterGroupId) {
         }
     } else {
         processDependencies(pom, '')
+    }
+}
+
+def cleanCIFS(String destination) {
+    // File that does not exist, we call this for cleanRemote
+    String srcFiles = "fake.file"
+
+    // Publish files over CIFS
+    cifsPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: true, publishers: [
+            [configName: env.CIFS_CONFIG_ID,
+             transfers: [
+                     [cleanRemote: true, excludes: '', flatten: false, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: '', sourceFiles: srcFiles]
+             ],
+             usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true
+            ]
+    ]
+}
+
+def buildCIFSPath() {
+    def fullJobName = env.JOB_NAME
+    def folderName = fullJobName.tokenize('/')[0..-2].join('/')
+    return "/staging/${folderName}/${env.CIFS_DIR}"
+}
+
+def deployToCIFS(String destination) {
+    // Define the pattern to match .pkg, .zip, and .tar.gz files in the target directories
+    String srcFiles = "**/target/**/*.pkg,**/target/**/*.zip,**/target/**/*.tar.gz"
+
+    // Publish files over CIFS
+    cifsPublisher alwaysPublishFromMaster: false, continueOnError: false, failOnError: true, publishers: [
+            [configName: env.CIFS_CONFIG_ID,
+             transfers: [
+                     [cleanRemote: true, excludes: '', flatten: true, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[,]+', remoteDirectory: destination, remoteDirectorySDF: false, removePrefix: '', sourceFiles: srcFiles]
+             ],
+             usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: true
+            ]
+    ]
+}
+
+def deleteGitTag(String tag) {
+    // Check if the tag exists
+    if (sh(script: "git tag -l | grep -w ${tag}", returnStatus: true) == 0) {
+        println "Deleting existing tag: ${tag}"
+        sh "git tag -d ${tag}"
+        runGit("push origin :refs/tags/${tag}")
+
+    } else {
+        println "Tag ${tag} does not exist. No deletion necessary."
+    }
+}
+
+def addGitTag(String tag) {
+    println "Adding tag: ${tag}"
+    sh "git tag ${tag}"
+    runGit("push --tags")
+}
+
+def runGit(String command) {
+    withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+        sh """
+            git config credential.helper '!f() { echo username=\$GIT_USER; echo password=\$GIT_PASS; }; f'
+            git ${command}
+            git config --unset credential.helper
+        """
     }
 }
 
