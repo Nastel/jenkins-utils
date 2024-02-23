@@ -117,10 +117,6 @@ def call() {
 
             stage('Build & Deploy') {
                 steps {
-//                    script {
-//                        sh "find ${env.MAVEN_LOCAL_REPO}/com/meshiq/ -type d ! -name '*-SNAPSHOT*'"
-//                        sh "find ${env.MAVEN_LOCAL_REPO}/com/nastel/ -type d ! -name '*-SNAPSHOT*'"
-//                    }
                     script {
 
                         // Step 1: Execute the Maven build
@@ -253,7 +249,7 @@ def deletePackage(String repository, String packageGroup, String packageName, St
         def command = "aws codeartifact delete-package-versions --domain ${env.AWS_DOMAIN} --domain-owner ${env.AWS_DOMAIN_OWNER} --repository ${repository} --format maven --namespace ${packageGroup} --package ${packageName} --versions ${packageVersion}"
         def status = sh(script: command, returnStatus: true)
         if (status != 0) {
-            echo "Package ${packageName} version ${packageVersion} not found or could not be deleted. Continuing..."
+            println "Package ${packageName} version ${packageVersion} not found or could not be deleted. Continuing..."
         }
     }
 }
@@ -296,7 +292,7 @@ def extractPendingBuildNumbers(jobName, currentBuild, pomVersion) {
             }
         }
     } else {
-        echo "Unable to access job builds for ${jobName}"
+        println "Unable to access job builds for ${jobName}"
     }
 
     return pendingBuildNumbers
@@ -415,6 +411,17 @@ def deleteGitTag(String tag) {
 def addGitTag(String tag) {
     println "Adding tag: ${tag}"
     sh "git tag ${tag}"
-    sh "git push --tags"
+    withCredentials([usernamePassword(credentialsId: 'temp-user', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+        sh """
+            # Temporarily configure Git to use credentials provided by Jenkins
+            git config credential.helper '!f() { echo username=\$GIT_USER; echo password=\$GIT_PASS; }; f'
+        
+            # Push tags to the remote repository
+            git push --tags
+        
+            # Remove the temporary Git credential configuration
+            git config --unset credential.helper
+        """
+    }
 }
 
