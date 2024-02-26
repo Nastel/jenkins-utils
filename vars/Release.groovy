@@ -119,7 +119,9 @@ def call() {
                     }
                     script {
                         // cleanup staging folder in pluto
-                        cleanCIFS(buildCIFSPath())
+                        if ( env.CIFS_DIR != null && env.CIFS_DIR != '' ) {
+                            cleanCIFS(buildCIFSPath())
+                        }
                     }
                 }
             }
